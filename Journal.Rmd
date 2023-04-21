@@ -14,115 +14,1065 @@ output:
 knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-IMPORTANT: You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
+<b> Executive Summary </b> </br>
+-In this report, we analyze the impact of gentrification on the labor market in Philadelphia from 2009 to 2019. We select tracts that gentrify if they experienced a disproportionate increase in residents with college degrees and disproportionate increase in median incomes.Using a "Resident's Ratio" for jobs, We find that gentrified tracts saw increases in local Service Sector jobs at a faster rate than the grwoth of local residents in the Service Sector. Gentrified areas thus are demonstrating a high demand for service sector labor that is outpacing the current available labor in this industry, 
 
 
-This is an .Rmd file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
 
-# My first post
+<b> Literature Review </b> </br>
+To determine our best model of analysis, we conducted literature review on empirical papers focusing on gentrification in the labor market.
+We drew our main inspiration from two papers: Meltzer & Ghorbani "Does gentrification increase employment opportunities in low-income neighborhoods?" (2017), and Freeman & Braconi "Gentrification and Displacement in New York City in the 1990s" (2004). Both authors define similar but unique criteria for "gentrified" tracts before conducting analysis on the impacts of gentrification on the labor market in their specific geographies and time periods.
 
-2018 | 7 | 23 Last compiled: `r Sys.Date()`
+Meltzer & Ghorbani utilize LODES employment data, the Neighborhood Change Database, and National Establishment Time Series data to analyze changes in total "local" jobs. They create several "live-work" buffers ranging from 1/3 to 2 mile radii to capture employment levels surrounding gentrified tracts, and consider these buffers in the largest metropolitan statistical areas in the US. Controlling for MSA and state-year fixed effects, they run a series of ordinary least squares regressions to analyze the impact of a gentrification flag variable on total local jobs. Their results show a larger increase in commerical activity in gentrified areas compared to non, and that smaller live-work zones see high jobs losses compared to larger live work zones that see job gains. Conclude that gentrification has a negative impact on jobs in the immediate area, however larger zones of analysis make findings less consistent. Saw increase in goods producing and high wage jobs in the one-mile buffer, and that job gains in the 1-2 mile raidus seemed to offset the losses in the immediate live-work zones.
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+Freeman & Braconi was one of the most commonly cited papers we came across in our background research, namely for the method they employed to identify gentrified tracts. <cont>
 
-## Second level header
+<b> Methodology </b> </br>
+Combining the approach of Meltzer and Freeman, we construct a series of criteria for our analysis. Tracts must meet all criteria to gentrifier, but those that only meet the first two could be considered to have had the potential to gentrify but did not.
 
-You can add more headers by adding more hashtags. These won't be put into the table of contents
+* 1) Tracts must have experienced a historical disinvestment. We quantify this by the portion of housing stock built. A tract must have a lower portion of housing stock built over the 1980s-1990s compared to all of Philadelphia to meet this criteria.
 
-### third level header
+* 2) Tracts must have lower median income than the metropolitan statistical area in 2009. This selects tracts that were populated by poorer residents at the start of the gentrification period.
 
-Here's an even lower level header
+* 3) Tracts must see an increase in both educational attainment and median income that is greater to the MSA level. We measure educational attainment by the percent of residents with at least a college degree. We then calculate measure ratios to compare the tract to the MSA, as calculated by: </br>
 
-# My second post (note the order)
+$Measure \ Ratios: \displaystyle \frac{Tract Level Measure}{MSA Level Measure}$
+ 	
+* A ratio greater than one indicates the tract level measure (median income, education level) is greater than the MSA, and below one indicates that that the tract level measure is below the MSA level. For example, 1.5 for median income indicates that the median income in a specific tract is 1.5 times that of the MSA. We calculate this ratio for 2009 and 2019, and find the change by subtracting the two and call this our "ratio change". We find the ratio change for the whole MSA and for each tract, and if a tract has a positive ratio change then we assume that the given measure (income, education) has increased greater than the whole MSA.
+ 	
+* 4) The tract must see a positive increase in median home values.
+ 	
+ 	
+ Even if a tract meets 1 and 2, if 3 and 4 are not met this means that there was not an exceptional increase in income or educational level, or positive change in home values, which would go against our assumptions about gentrification. We conduct statistically significance tests to filter out tracts that did not experience a statistically significant change in these measures.
+ 
+ 
+After we select these tracts, we generate a 100 meter buffer for each tract. We utilize this buffer to include block level LODES data that may not be inside of the tract, but realistically contains jobs that effect the labor force of our selected tract. 
 
-2018 | 7 | 23 Last compiled: `r Sys.Date()`
+Our resulting buffer zone as follows:
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
-
-# Adding R stuff
-
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the sam place. 
-
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation =1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
-
-```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
-```
-
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag), from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You learn all of these things and more can be customized in each R code block.
-
-# The big idea
-
-Use this lab journal to record what you do in R. This way I will be able to see what you are doing and help you along the way. You will also be creating a repository of all the things you do. You can make posts about everything. Learning specific things in R (project unrelated), and doing things for the project that we will discuss at the beginning of the Fall semester. You can get started now by fiddling around with googling things, and trying stuff out in R. I've placed some helpful starting links in the links page on this website
-
-# What can you do right now by yourself?
-
-It's hard to learn programming when you don't have specific problems that you are trying to solve. Everything just seems abstract.
-
-I wrote an [introductory programming book that introduces R](https://crumplab.github.io/programmingforpsych/), and gives some [concrete problems for you to solve](https://crumplab.github.io/programmingforpsych/programming-challenges-i-learning-the-fundamentals.html). 
-
-To get the hang of journaling and solving the problems to learn programming, my suggestion is that you use this .Rmd file to solve the problems. It would look like this:
-
-# Problem 1
-
-Do simple math with numbers, addition, subtraction, multiplication, division
-
-```{r}
-1+2
-2*5
-5/3
-(1+6+4)/5
-
-```
-
-# Problem 2
-
-Put numbers into variables, do simple math on the variables
-
-```{r}
-a<-1
-b<-2
-a+b
-
-d<-c(1,2,3)
-e<-c(5,6,7)
-d+e
-d*e
-d/e
-
-```
-
-# Problem 3
-
-Write code that will place the numbers 1 to 100 separately into a variable using for loop. Then, again using the seq function.
-
-```{r}
-# for loop solution
-# i becomes the number 1 to 100 at each step of the loop
+```{R Load Packaged and Pull Census Data, echo=FALSE, message=FALSE, results='hide'}
+library(tidyverse)
+library(tidycensus)
+library(tigris)
+library(sf)
+library(tmap)
 
 
-a <- length(100) # make empty variable, set length to 100
-for (i in 1:100){
-  a[i] <-i #assigns the number in i, to the ith index of a
-}
+options(scipen = 999)
 
-print(a)
+tidycensus::census_api_key("efb15fadd3651f2489c405d47fb1c3d1f561adbd")
 
-# for loop solution #2
 
-a<-c() #create empty variable using combine command
-for (i in 1:100){
-  a<-c(a,i) # keeps combining a with itself and the new number in i
-}
-print(a)
+variables <- tidycensus::load_variables(2019, "acs5")
+variables09 <- tidycensus::load_variables(2009, "acs5")
 
-# seq solution
-a <- seq(1,100,1) # look up help for seq using ?seq() in console
-print(a)
+
+tracts.2019 <- get_acs(geography = "tract",
+                       year = 2019,
+                       state = "PA",
+                       county = 101,
+                       variables = c(hhinc = "B19013_001",
+                                     bach = "B23006_023",
+                                     edu.total = "B23006_001",
+                                     home.value = "B25077_001",
+                                     pop = "B01003_001"),
+                       output = "wide") %>%
+  mutate(Year = "2019") 
+
+
+
+msa.2019 <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
+                    year = 2019,
+                    variables = c(hhinc = "B19013_001",
+                                  bach = "B23006_023",
+                                  edu.total = "B23006_001"),
+                    output = "wide") %>%
+  mutate(Year = "2019") %>%
+  filter(GEOID == "37980")
+
+
+
+tracts.2010 <- get_acs(geography = "tract",
+                       year = 2010,
+                       state = "PA",
+                       county = 101,
+                       variables = c(hhinc = "B19013_001",
+                                     bach = "B23006_023",
+                                     edu.total = "B23006_001",
+                                     home.value = "B25077_001",
+                                     pop = "B01003_001"),
+                       output = "wide") %>%
+  mutate(Year = "2010") 
+
+msa.2010 <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
+                    year = 2010,
+                    variables = c(hhinc = "B19013_001",
+                                  bach = "B23006_023",
+                                  edu.total = "B23006_001"),
+                    output = "wide") %>%
+  mutate(Year = "2010") %>%
+  filter(GEOID == "37980")
 
 ```
 
-# Replace this with problem 4
+```{R Creating the Disinvestment Flag, echo = F, results = 'hide', message = FALSE}
 
-And keep going. Try to solve the problems with different scripts that provide the same solution. Good luck, Happy coding.
+
+
+msa.disinvest <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
+                         year = 2019,
+                         variables = c(units.70s = "B25034_007",
+                                       units.80s = "B25034_006",
+                                       units.total = "B25034_001"),
+                         output = "wide") %>%
+  filter(GEOID == "37980") %>%
+  mutate(units.share = (units.70sE + units.80sE)/units.totalE)
+
+tracts.disinvest <- get_acs(geography = "tract",
+                            year = 2019,
+                            state = "PA",
+                            county = 101,
+                            variables = c(units.70s = "B25034_007",
+                                          units.80s = "B25034_006",
+                                          units.total = "B25034_001"),
+                            output = "wide") %>%
+  mutate(units.share = (units.70sE + units.80sE)/units.totalE,
+         disinvestment = units.share/ msa.disinvest$units.share,
+         disinvestment.flag = ifelse(disinvestment < 1, 1, 0)) %>%
+  dplyr::select(GEOID, units.share, disinvestment, disinvestment.flag)
+```
+
+```{R Pulling Geography Files from Tigris, echo = F, results = 'hide', message = FALSE}
+#### Pulling Tigris Data ####
+
+options(tigris_use_cache=TRUE)
+tracts <- tigris::tracts(state = "PA", county = 101, year = 2019) %>% st_as_sf()
+block.grps <- tigris::block_groups(state = "PA", county = 101, year = 2019)
+blocks <- tigris::blocks(state="PA", county = 101, year = 2019) %>%
+  mutate(id = GEOID10)
+#mutate new id field to join w/ the LODES data
+```
+
+```{R Creating the Gentrification Flags, echo = F, results = 'hide', message = FALSE}
+
+combined.msa <- rbind(msa.2019, msa.2010) %>%
+  pivot_wider(names_from = Year,
+              values_from = 3:8) %>%
+  mutate(msa.bach.share.2019 = bachE_2019 / edu.totalE_2019,
+         msa.bach.share.2010 = bachE_2010 / edu.totalE_2010) %>%
+  dplyr::select(1:4,15:16)
+
+
+combined.tracts <- rbind(tracts.2019, tracts.2010) %>%
+  pivot_wider(names_from = Year,
+              values_from = 3:12) %>%
+  mutate(inc.sig = significance(hhincE_2019, hhincE_2010, hhincM_2019, hhincM_2010),
+         bach.sig = significance(bachE_2019, bachE_2010, bachM_2019, bachM_2010),
+         home.sig = significance(home.valueE_2019, home.valueE_2010, home.valueM_2019, home.valueM_2010),
+         pop.sig = significance(popE_2019, popE_2010, popM_2010, popM_2010),
+         bach.share.2019 = bachE_2019 / edu.totalE_2019,
+         bach.share.2010 = bachE_2010 / edu.totalE_2010,
+         hhinc.ratio.2019 = hhincE_2019/combined.msa$hhincE_2019,
+         hhinc.ratio.2010 = hhincE_2010/combined.msa$hhincE_2010,
+         hhinc.relative.change = ifelse(inc.sig == TRUE, 
+                                        (hhincE_2019/combined.msa$hhincE_2019) - (hhincE_2010/combined.msa$hhincE_2010),
+                                        NA),
+         bach.relative.change = ifelse(bach.sig == TRUE, bach.share.2019 - bach.share.2010, NA),
+         home.value.change = ifelse(home.sig == TRUE, home.valueE_2019 - home.valueE_2010, NA)) %>%
+  full_join(tracts.disinvest) %>%
+  left_join(tracts, by = "GEOID") %>%
+  st_as_sf()
+
+selection.tracts <- combined.tracts %>%
+  mutate(pop.sig = significance(popE_2019, popE_2010, popM_2019, popM_2010),
+         pop.relative.change = ifelse(pop.sig == TRUE, popE_2019 - popE_2010,NA))
+
+selection.tracts2 <- selection.tracts %>%
+  mutate(popE_2010 = ifelse(pop.sig == TRUE, popE_2010, NA),
+         popE_2019 = ifelse(pop.sig == TRUE, popE_2019, NA),
+         hhincE_2010 = ifelse(inc.sig == TRUE, hhincE_2010, NA),
+         hhincE_2019 = ifelse(inc.sig == TRUE, hhincE_2019, NA),
+         bach.share.2010 = ifelse(bach.sig == TRUE, bach.share.2010, NA),
+         bach.share.2019 = ifelse(bach.sig == TRUE, bach.share.2019, NA),
+         home.valueE_2010 = ifelse(home.sig, home.valueE_2010, NA),
+         home.valueE_2019 = ifelse(home.sig == TRUE, home.valueE_2019, NA)) %>%
+  select(GEOID, "Population_2010" = popE_2010, "Population_2019" = popE_2019, 
+         "Income_2010" = hhincE_2010, "Income_2019" = hhincE_2019, 
+         "Education_2010" = bach.share.2010, "Education_2019" = bach.share.2019,
+         "HomeValue_2010" = home.valueE_2010, "HomeValue_2019" = home.valueE_2019) %>%
+  mutate(Education_2010 = 100 * round(Education_2010, 3),
+         Education_2019 = 100 * round(Education_2019, 3)) %>%
+  pivot_longer(2:9, names_to =  c("indicator","year"), values_to = "estimate", names_sep = "_") %>%
+  pivot_wider(values_from = estimate, names_from = year) %>%
+  mutate(measure.change = selection.tracts2$'2019' - selection.tracts2$'2010')
+
+
+st_write(selection.tracts2,"C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\shapefiles\\selection_tracts2.shp", append = FALSE )
+
+
+
+selection.tracts <- selection.tracts %>%
+  left_join(tracts, by = "GEOID")
+
+  dplyr::select(1:2,20,22:34)
+
+options(scipen=999)
+
+st_write(selection.tracts, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\shapefiles\\selection_tracts.shp")
+
+gent.tracts <- combined.tracts %>%
+  mutate(low.inc.flag = ifelse(hhinc.ratio.2010 > 1 | is.na(hhinc.ratio.2010), 0, 1),
+         inc.change.flag = ifelse(hhinc.relative.change < 0 | is.na(hhinc.relative.change), 0, 1),
+         edu.change.flag = ifelse(bach.relative.change < 0 | is.na(bach.relative.change), 0, 1),
+         value.change.flag = ifelse(home.value.change < 0 | is.na(home.value.change), 0, 1),
+         gentrification.flag.edu = ifelse(low.inc.flag == 1 & edu.change.flag == 1 & 
+                                            disinvestment.flag == 1 & value.change.flag == 1, "Gentrifying", "Not Gentrifying"),
+         gentrification.flag.inc = ifelse(low.inc.flag == 1 & inc.change.flag == 1 & 
+                                            disinvestment.flag == 1 & value.change.flag == 1, "Gentrifying", "Not Gentrifying"),
+         either.gentrification.flag = ifelse(gentrification.flag.edu == "Gentrifying" | 
+                                             gentrification.flag.inc == "Gentrifying", "Gentrifying", "Not Gentrifying"),
+         both.gentrification.flag = ifelse(gentrification.flag.edu == "Gentrifying" &
+                                               gentrification.flag.inc == "Gentrifying", "Gentrifying", "Not Gentrifying"),
+         both.gentrification.cat = ifelse(both.gentrification.flag == "Gentrifying" & hhinc.ratio.2019 > 1,
+                                          "Fully Gentrified",both.gentrification.flag), 
+        either.gentrification.cat = ifelse(either.gentrification.flag == "Gentrifying" & hhinc.ratio.2019 > 1,
+                                           "Fully Gentrified", either.gentrification.flag)) %>%
+  full_join(tracts, by = "GEOID") %>%
+  st_as_sf()
+
+
+
+gent_tracts <- gent.tracts %>%
+  mutate("GentCat" = ifelse(disinvestment.flag == 1 & low.inc.flag == 1 &
+                                    inc.change.flag == 0 & edu.change.flag == 0 &
+                                  value.change.flag == 0, "Could Have Gentrified", both.gentrification.cat)) %>%
+filter(GEOID != "42101000401",
+       GEOID !="42101000402",
+       GEOID != "42101000600")
+
+
+```
+
+```{R tracts map, echo = F, results = 'hide', message = F}
+
+catcolors <- c("#47525f", "#f15e22", "#ffcc3b", "#a39d93")
+
+options(tigris_use_cache = TRUE)
+county <- tigris::counties(state = "PA") %>%
+  subset(COUNTYFP == "101")
+tracts <- tigris::tracts(state="PA", county = "101", year = 2019) %>% sf::st_as_sf() 
+streets <- tigris::primary_secondary_roads("PA")%>%
+  st_transform("NAD83") %>%
+  st_intersection(county)
+hydro <- tigris::area_water("PA", county = "Philadelphia")%>%
+  st_transform("NAD83")
+
+
+gent_cat_map <-
+tm_shape(streets, 
+         bbox = st_buffer(county, 2000),
+         unit = "mi") +
+  tm_lines(col="grey40",
+           lwd = 1.8) +
+tm_shape(gent_tracts) +
+  tm_polygons(col = "GentCat",
+              title = "Gentrified Areas",
+              style = "cat",
+              palette = catcolors,
+              id="total",
+              alpha=.75,
+              border.col = "black", 
+              border.alpha = .2,
+              showNA = T, 
+              textNA = "No Data") +
+  tm_layout(frame = F,
+            legend.position = c(.65, .08),
+            legend.outside=F,
+            legend.text.size = .8,
+            legend.title.fontface = "bold", 
+            legend.title.size = 1) +
+  tm_scale_bar(position = c("left", "bottom"), breaks = c(0,2,4)) +
+  tm_shape(county) +
+  tm_borders(col="grey70", lwd = 4) +
+  tm_shape(hydro) +
+  tm_polygons(col = "lightblue",
+              border.alpha = .5)
+
+
+
+
+tmap_save(gent_cat_map, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_cat.png")
+         
+```
+
+```{R Creating Gentrification Buffers, echo = F, results = 'hide', message = FALSE}
+
+names = c("Fisher Park / Olney 4th Street", "East Falls / Hunting Industrial", "Manayunk / Roxbourough",
+        "East Mt. Airy", "Malcolm X. Park / Cobbs Creek", "Cathedral Park / West Parkside",
+        "Cecil B. Moore South / Chinatown", "Point Breeze / South Philly",
+        "Fishtown / Port Richmond / East Kensington")
+
+names2 = c("Malcolm X. Park / Cobbs Creek",
+           "Cecil B. Moore South / Chinatown",
+           "Fishtown / Port Richmond / East Kensington",
+           "Manayunk / Roxbourough",
+           "Cathedral Park / West Parkside",
+           "East Falls / Hunting Industrial", 
+           "Point Breeze / South Philly",
+           "Cecil B. Moore South / Chinatown",
+           "East Mt. Airy", 
+           "Point Breeze / South Philly",
+           "Fisher Park / Olney 4th Street")
+
+
+region = c("Upper North", "North West", "North West",
+         "Upper North West", "West", "West Park",
+         "Lower North", "South", "River Wards")
+
+
+gent.both <- gent.tracts %>%
+ subset(both.gentrification.flag == "Gentrifying" & !GEOID %in% c("42101000401",
+                                                                  "42101000402",
+                                                                  "42101000600"))#removing tracts in CBD
+
+#gent.arc <- gent.both %>%
+ # select(GEOID)
+
+#st_write(gent.arc, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gentrified_tracts\\tracts2.shp")
+
+both.dissolve <- gent.both %>%
+ st_union(.,by_feature = F) %>% st_as_sf()
+
+both.buff <- both.dissolve %>%  
+  st_as_sf() %>%
+  st_transform(crs = st_crs("NAD83")) %>%
+  st_buffer(100) %>%
+  st_cast("POLYGON") %>%
+  mutate(gentrification.area = as.character(1:n()),
+         names = names,
+         names_wrap = str_wrap(names, 10))
+
+both.buff2 <- both.dissolve %>%  
+  st_as_sf() %>%
+  st_transform(crs = st_crs("NAD83")) %>%
+  st_buffer(0) %>%
+  st_cast("POLYGON") %>%
+  mutate(gentrification.area = as.character(1:n()),
+         names = names2,
+         names_wrap = str_wrap(names, 10))
+
+tracts_flag <- st_join(tracts, both.buff2)
+
+
+
+
+
+
+nhoods <- sf::read_sf("C:\\Users\\sffra\\Downloads\\PhillyPlanning_Neighborhoods\\PhillyPlanning_Neighborhoods.shp")
+
+```
+
+```{R gent map, echo=F, message = FALSE}
+
+county <- tigris::counties(state = "PA") %>%
+  subset(COUNTYFP == "101")
+tracts <- tigris::tracts(state="PA", county = "101") %>% sf::st_as_sf() 
+streets <- tigris::primary_secondary_roads("PA")%>%
+  st_transform("NAD83") %>%
+  st_intersection(county)
+hydro <- tigris::area_water("PA", county = "Philadelphia")%>%
+  st_transform("NAD83")
+
+
+buffermap <-
+tm_shape(streets, 
+         bbox = st_buffer(county, 2000),
+         unit = "mi") +
+  tm_lines(col="grey40",
+           lwd = 1.8) +
+tm_shape(both.buff) +
+  tm_polygons(col = "#3349b0",
+              title = "Gentrified Areas",
+              style = "cont",
+              palette = "PuBu",
+              id="total",
+              alpha=.75,
+              border.col = "black", 
+              border.alpha = .2,
+              showNA = T, 
+              textNA = "No Data") +
+  tm_layout(frame = F,
+            legend.position = c(.65, .08),
+            legend.outside=F,
+            legend.text.size = .8,
+            legend.title.fontface = "bold", 
+            legend.title.size = 1) +
+  tm_scale_bar(position = c("left", "bottom"), breaks = c(0,2,4)) +
+  tm_shape(county) +
+  tm_borders(col="grey70", lwd = 4) +
+  tm_shape(hydro) +
+  tm_polygons(col = "lightblue",
+              border.alpha = .5)
+
+
+
+
+tmap_save(buffermap, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\buffermap.png")
+
+#nhoods <- sf::read_sf("C:\\Users\\mhutton\\OneDrive - Philadelphia Works Inc\\R and ArcGIS Reference Library\\Neighborhoods_Philadelphia\\Neighborhoods_Philadelphia.shp")
+
+```
+
+```{R change over time, echo = F, results = 'hide', message = FALSE}
+
+gent.flag <- gent.tracts %>%
+  select(GEOID, gentrification.flag.edu, gentrification.flag.inc, both.gentrification.flag, both.gentrification.cat)
+
+years <- c(2010:2019)
+
+#loop through using map_dfr
+tracts.i<- map_dfr(years, ~{get_acs(geography = "tract",
+                                    year = .x,
+                                    state = "PA",
+                                    county = 101,
+                                    variables = c(hhinc = "B19013_001",
+                                                  bach = "B23006_023",
+                                                  edu.total = "B23006_001",
+                                                  home.value = "B25077_001"),
+                                    output = "wide")
+                             }, .id = "year")%>%
+              mutate("bach.share" = bachE / edu.totalE,
+                     "year" = 2009 + as.numeric(year)) %>%
+              left_join(gent.flag, by = "GEOID") %>%
+              mutate("gent.flag" = ifelse(both.gentrification.flag == "Gentrifying", 1, 0))
+
+
+tracts.i.sum <- tracts.i %>%
+  na.omit() %>%
+  group_by(year, gent.flag) %>%
+  summarize_at(c("bach.share", "home.valueE", "hhincE"),mean )
+
+
+
+
+
+msa.i<- map_dfr(years, ~{get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
+                                 year = .x,
+                                 
+                                 variables = c(hhinc = "B19013_001",
+                                               bach = "B23006_023",
+                                               edu.total = "B23006_001"),
+                                 output = "wide")%>%
+                                 filter(GEOID == "37980")
+                        }, .id = "year") %>%
+          mutate("bach.share" = bachE / edu.totalE,
+         "year" = 2009 + as.numeric(year))
+
+
+
+yearly.change <- full_join(msa.i, tracts.i.sum, by = "year") %>%
+  filter(gent.flag == 1) 
+```
+After selecting these gentrified buffers, we calculate the yearly changes in median income and education levels for all gentrified tracts and compare it to the MSA level changes in these measures:
+
+
+```{R plots, echo = F, message = FALSE, outwidth = "50%"}
+
+  income.p <- ggplot(yearly.change, aes(x=year))+ 
+  geom_line(aes( y = hhincE.x, col = "MSA level")) +
+  geom_line(aes( y = hhincE.y, col = "Gentrified Tracts")) + xlab("Year") + ylab("Median Household Income")
+ggsave("C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\Tables\\incomechanges.png")
+
+    ggplot(yearly.change, aes(x=year))+ 
+  geom_line(aes( y = bach.share.x, col = "MSA level")) +
+  geom_line(aes( y = bach.share.y, col = "Gentrified Tracts")) + xlab("Year") + ylab("Share of Population w/ College Degree")
+    ggsave("C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\Tables\\educationchanges.png")
+    
+    
+  write.csv(yearly.change, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\yearlychange.csv")
+
+```
+We see rapid increases in share of population with a bachelor's degree that quickly outpaces the MSA, and a growing median income in gentrified tracts that appear it will soon overtake the MSA level.
+
+
+Demographics of gentrified areas:
+
+```{R demographics, echo = F, result= 'hide', messages= F}
+
+demo.years <- c(2010,2019) 
+
+demographics<- map_dfr(demo.years, ~{get_acs(geography = "tract",
+                                    year = .x,
+                                    state = "PA",
+                                    county = 101,
+                                    variables = c(pop = "B01003_001",
+                                                  black = "B01001B_001",
+                                                  families = "B17012_001",
+                                                  poor.fam = "B17012_002",
+                                                  median.age = "B07002_001"),
+                                    output = "wide")
+                             }, .id = "year")%>%
+              left_join(gent.flag, by = "GEOID") %>%
+              mutate("gent.flag" = ifelse(both.gentrification.flag == "Gentrifying", 1, 0),
+                     "year" = ifelse(year == 1, 2010, 2019)) %>% left_join(tracts, by = "GEOID") 
+
+demographics <- demographics %>%
+  left_join(tracts, by = "GEOID") %>%
+  st_as_sf()
+
+
+flag <- gent.both %>%
+ st_union(.,by_feature = F) %>% st_as_sf() %>%
+  st_cast("POLYGON")%>%
+  mutate(names = names2)
+
+
+gent.demographics <- st_join(demographics, flag) %>% 
+  st_as_sf() %>%
+  filter(both.gentrification.cat == "Gentrifying")
+
+
+demographics.sum <- demographics %>%
+  na.omit() %>%
+  group_by(year, gent.flag) %>%
+  summarize_at(c("popE", "blackE", "familiesE", "poor.famE"),sum) %>%
+  mutate("perblack" = blackE / popE,
+         "poor.hh" = poor.famE / familiesE)
+
+
+demographics.median.age <- demographics %>%
+  na.omit() %>%
+  group_by(year, gent.flag) %>%
+  summarize_at(c("median.ageE"), median)
+
+
+write.csv(gent.tracts.demographics.sum, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_demographics_sum.csv")
+
+msa.demographics <- map_dfr(demo.years, ~{get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
+                                    year = .x,
+                                    variables = c(pop = "B01003_001",
+                                                  black = "B01001B_001",
+                                                  families = "B17012_001",
+                                                  poor.fam = "B17012_002",
+                                                  median.age = "B07002_001"),
+                                    output = "wide") %>%
+       filter(GEOID == "37980")
+                             }, .id = "year")%>%
+              mutate("per.black" = blackE / popE,
+                     "poor.fam" = poor.famE / familiesE,
+                     "year" = ifelse(as.numeric(year) == 1, 2010, 2019))
+
+write.csv(msa.demographics, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\msa_demographics.csv")
+```
+<b> LODES Employment Data </b>
+
+After selecting our gentrified buffers, we bring in block level LODES data to assign to each buffer. We aggregate the block level data to buffer level, and remove industries that have exceptionally low (less than 50) employment numbers for the entire buffer.
+
+
+
+Looking at general LODES totals for the whole MSA
+
+Our first step is to analyze the difference in jobs by income level for all gentrified tracts compared to Philadelphia. We first calculate the share of each income bin for all of Philadelphia, and see how this share changed over the analysis period. The bins are categorized as follows:
+* 1) Extremely Poor: wage less than \$1,250 a month (\$15,000 annual gross salary)
+* 2) Poor: wage between \$1,250 and \$3,333 a month  (\$15,000 to \$39,996 annual gross salary)
+* 3) Standard: wage between \$3,333 and above a month (\$39,996 and above annual gross salary)
+
+These bins are not too specific, as the standard bin is very broad.
+
+```{R WAC income, echo = F, message = FALSE, results = 'hide'}
+income.2010 <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2010.csv.gz") %>%
+  mutate(w_geocode = as.character(w_geocode)) %>%
+  filter(startsWith(w_geocode, "42101")) %>%
+  select(1,6:8) %>%
+  pivot_longer(2:4, names_to = "income", values_to = "wac.income.2010")
+
+
+wac.income<- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2019.csv.gz") %>% 
+  mutate(w_geocode = as.character(w_geocode)) %>%
+  filter(startsWith(w_geocode, "42101")) %>%
+  select(1,6:8) %>%
+  pivot_longer(2:4, names_to = "income", values_to = "wac.income.2019") %>%
+  inner_join(income.2010) %>%
+  mutate(income = recode(income,
+                           "CE01" = "Extremely Poor (Less than $1250 / month)",
+                           "CE02" = "Poor ($1250 - $3333 / month)",
+                           "CE03" = "Standard (More than $3333 / month)")) %>%
+  inner_join(blocks, by = c("w_geocode" = "GEOID10")) %>%
+  st_as_sf() %>%
+  select(1:4)
+
+wac.income.totals <- wac.income %>%
+  st_drop_geometry() %>%
+  group_by(income) %>%
+  summarize_if(is.numeric,sum) %>%
+  mutate(share.10 = round( 100 * wac.income.2010 / sum(wac.income.2010), 3),
+         share.19 = round( 100 * wac.income.2019 / sum(wac.income.2019), 3),
+         change = round(share.19 - share.10, 3))
+
+rm(income.2010)
+```
+
+```{R change wages, echo = F}
+library(DT)
+
+wac.income.totals <- wac.income.totals %>%
+  select(income, wac.income.2010, wac.income.2019, share.10, share.19, change)
+
+wac.income.totals.dt <- DT::datatable(wac.income.totals,
+         #extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         scrollY = TRUE,
+                         paging=TRUE,
+                         fixedHeader=FALSE,
+                         rowWidth='10%'),
+         colnames=c("Income", "Job Count 2010", "Job Count 2019", "Share of All Jobs 2010",
+                    "Share of All Jobs 2019", "Change in Share of All Jobs"),
+         caption ="Income Distribution, All of Philly")
+
+
+write.csv(wac.income.totals, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\wac_income.csv")
+#saveWidget(wac.income.totals.dt, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\Tables\\wac.income.totals.html")
+#webshot(wac.income.totals.html, "wac.table.png")
+
+```
+
+We see that for all of Philadelphia, the Standard bin is growing in share mostly due to a strong decrease in the Poor bin. Notably, the Poor bin decreased greater than the Very Poor bin. This suggests that income gains are happening largely in those making the Poor wages, with less growth and mobility in the Very Poor.
+
+We repeat the same analysis for the gentrified areas:
+
+```{R income for gentrified areas, echo = F, message = FALSE}
+
+gent.income.totals <- st_intersection(both.buff, wac.income)
+
+gent.income.totals <- gent.income.totals%>%
+  group_by(income) %>%
+  summarize_if(is.numeric, sum) %>%
+  mutate(share.10 = round( 100 * wac.income.2010 / sum(wac.income.2010), 3),
+         share.19 = round( 100 * wac.income.2019 / sum(wac.income.2019), 3),
+         city.diff.10 = round(share.10 - wac.income.totals$share.10, 3),
+         city.diff.19 = round(share.19 - wac.income.totals$share.19, 3),
+         change = round(share.19 - share.10, 3))
+
+gent.income.totals <- gent.income.totals %>%
+  select(!c(x)) %>%
+  st_drop_geometry()
+
+write.csv(gent.income.totals, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\wac_income_gent.csv")
+
+DT::datatable(gent.income.totals,
+         #extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         scrollY = TRUE,
+                         paging=TRUE,
+                         fixedHeader=FALSE,
+                         rowWidth='10%'),
+         colnames=c("Income", "Job Count 2010", "Job Count 2019", "Share of All Jobs 2010",
+                    "Share of All Jobs 2019", "Change in Share of All Jobs"),
+         caption ="Income Distribution in Gentrified Areas")
+
+```
+
+We see that compared to all of Philadelphia, gentrified tracts had a much higher percent of jobs in the "Poor" category, 38% in 2010, but this bin decreased by the same rate as in all of Philly. Gentrified also tracts had a lower decrease in percent of Extremely Poor compared to all of Philadelphia, and a lower growth in Standard wages.
+
+We see that gentrified tracts had more Poor and Very Poor jobs compared to all of Philadelphia both at the start and end of the gentrification period, however the changes in these two categories were comprable if not smaller than the changes for all of Philadelphia.In fact, while the direction of the changes was the same as in all of Philadelphia, the magnitudes for all three categories were smaller. While the dynamics of the intial period match our assumptions about gentrification, we would have expected to see larger increases in the Standard wage jobs and rapid decline in the Poor and Very Poor jobs. We can't for certain rule this out, however, due to the lack of specificty noted above in regards to the bin levels for wages.
+
+```{R LODES Work Area, echo = F, results = 'hide', message = FALSE}
+#nhoods <- sf::read_sf("C:\\Users\\sffra\\Downloads\\PhillyPlanning_Neighborhoods\\PhillyPlanning_Neighborhoods.shp"
+ 
+lodes.2010 <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2010.csv.gz") %>% 
+  mutate(w_geocode = as.character(w_geocode)) %>%
+  filter(startsWith(w_geocode, "42101")) %>%
+  select(1,9:28) %>%
+  pivot_longer(2:21, names_to = "industry", values_to = "employment.2010")
+
+
+lodes.wac <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2019.csv.gz") %>% 
+  mutate(w_geocode = as.character(w_geocode)) %>%
+  filter(startsWith(w_geocode, "42101")) %>%
+  select(1,9:28) %>%
+  pivot_longer(2:21, names_to = "industry", values_to = "employment.2019") %>%
+  inner_join(lodes.2010) %>%
+  mutate(industry = recode(industry, 
+"CNS01"= "Agriculture, Forestry, Fishing and Hunting",
+"CNS02"="Mining, Quarrying, and Oil and Gas Extraction",
+"CNS03"= "Utilities",
+"CNS04"="Construction",
+"CNS05"= "Manufacturing",
+"CNS06"= "Wholesale Trade",
+"CNS07"= "Retail Trade",
+"CNS08"= "Transportation and Warehousing",
+"CNS09"= "Information",
+"CNS10"= "Finance and Insurance",
+"CNS11"= "Real Estate and Rental and Leasing",
+"CNS12"= "Professional, Scientific, and Technical Services",
+"CNS13"= "Management of Companies and Enterprises",
+"CNS14"= "Administrative Support and Waste Remediation",
+"CNS15"= "Educational Services",
+"CNS16"= "Health Care and Social Assistance",
+"CNS17"= "Arts, Entertainment, and Recreation",
+"CNS18"= "Accommodation and Food Services",
+"CNS19"= "Other Services (except Public Administration)")) %>%
+  filter(industry != "CNS20") %>% 
+  mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
+                           industry == "Educational Services" | 
+                           industry == "Finance and Insurance"|
+                           industry == "Health Care and Social Assistance"| 
+                           industry == "Information" |
+                           industry == "Management of Companies and Enterprises" | 
+                           industry == "Professional, Scientific, and Technical Services" |
+                           industry == "Real Estate and Rental and Leasing", 
+                           "Professional", 
+                            ifelse(industry == "Accommodation and Food Services" |
+                                   industry == "Arts, Entertainment, and Recreation" |
+                                   industry == "Other Services (except Public Administration)" |
+                                   industry == "Retail Trade", 
+                                   "Services", 
+                                     ifelse(industry == "Construction" | 
+                                            industry == "Manufacturing" |
+                                            industry == "Transportation and Warehousing" |
+                                            industry == "Utilities" |
+                                            industry == "Wholesale Trade", "Production", "n/a")))) %>%
+  filter(Sector != "n/a") %>%
+  inner_join(blocks, by = c("w_geocode" = "GEOID10")) %>%
+  st_as_sf() %>%
+  select(1:5)
+
+#write.csv(lodes.wac, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\lodes_wac.csv")
+
+
+msa.wac.sectors <- lodes.wac %>% 
+  st_drop_geometry() %>%
+  filter(industry != "Mining, Quarrying, and Oil and Gas Extraction",
+         industry != "Agriculture, Forestry, Fishing and Hunting") %>%
+  group_by(Sector) %>%
+  summarize_if(is.numeric, sum) %>%
+  mutate("Share10" = employment.2010 / sum(employment.2010),
+         "Share19" = employment.2019 / sum(employment.2019),
+         "ChangeShare" = Share19 - Share10,
+         "ChangeJobs" = employment.2019 - employment.2010)
+
+#st_write(msa.wac.sectors, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\msa.wac.sectors.csv")
+
+
+lodes.gentrification.wac <- st_intersection(lodes.wac, both.buff) 
+
+lodes.gentrification.wac.csv <- lodes.gentrification.wac %>% 
+  st_drop_geometry() %>%
+  group_by(names, Sector, industry) %>%
+  summarize_if(is.numeric, sum)
+
+ # write.csv(lodes.gentrification.wac.csv, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_wac.csv" )
+
+
+
+
+
+#st_write(gent.wac.sectors, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\wac_buffer\\wac_buffer.shp")
+```
+
+```{R lodes RAC, echo = F, results = 'hide', message = FALSE}
+lodes.2010 <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/rac/pa_rac_S000_JT01_2010.csv.gz") %>% 
+  mutate(h_geocode = as.character(h_geocode)) %>%
+  filter(startsWith(h_geocode, "42101")) %>%
+  select(1,9:28) %>%
+  pivot_longer(2:21, names_to = "industry", values_to = "employment.2010")
+
+
+lodes.rac <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/rac/pa_rac_S000_JT01_2019.csv.gz") %>% 
+  mutate(h_geocode = as.character(h_geocode)) %>%
+  filter(startsWith(h_geocode, "42101")) %>%
+  select(1,9:28) %>%
+  pivot_longer(2:21, names_to = "industry", values_to = "employment.2019") %>%
+  inner_join(lodes.2010) %>%
+  mutate(industry = recode(industry, 
+"CNS01"= "Agriculture, Forestry, Fishing and Hunting",
+"CNS02"="Mining, Quarrying, and Oil and Gas Extraction",
+"CNS03"= "Utilities",
+"CNS04"="Construction",
+"CNS05"= "Manufacturing",
+"CNS06"= "Wholesale Trade",
+"CNS07"= "Retail Trade",
+"CNS08"= "Transportation and Warehousing",
+"CNS09"= "Information",
+"CNS10"= "Finance and Insurance",
+"CNS11"= "Real Estate and Rental and Leasing",
+"CNS12"= "Professional, Scientific, and Technical Services",
+"CNS13"= "Management of Companies and Enterprises",
+"CNS14"= "Administrative Support and Waste Remediation",
+"CNS15"= "Educational Services",
+"CNS16"= "Health Care and Social Assistance",
+"CNS17"= "Arts, Entertainment, and Recreation",
+"CNS18"= "Accommodation and Food Services",
+"CNS19"= "Other Services (except Public Administration)")) %>%
+  filter(industry != "CNS20") %>%
+  mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
+                           industry == "Educational Services" | 
+                           industry == "Finance and Insurance"|
+                           industry == "Health Care and Social Assistance"| 
+                           industry == "Information" |
+                           industry == "Management of Companies and Enterprises" | 
+                           industry == "Professional, Scientific, and Technical Services" |
+                           industry == "Real Estate and Rental and Leasing", 
+                           "Professional", 
+                            ifelse(industry == "Accommodation and Food Services" |
+                                   industry == "Arts, Entertainment, and Recreation" |
+                                   industry == "Other Services (except Public Administration)" |
+                                   industry == "Retail Trade", 
+                                   "Services", 
+                                     ifelse(industry == "Construction" | 
+                                            industry == "Manufacturing" |
+                                            industry == "Transportation and Warehousing" |
+                                            industry == "Utilities" |
+                                            industry == "Wholesale Trade", "Production", "n/a")))) %>%
+  filter(Sector != "n/a") %>%#removing public administration
+  inner_join(blocks, by = c("h_geocode" = "GEOID10")) %>%
+  st_as_sf() %>%
+  select(1:5)
+
+rm(lodes.2010)
+
+lodes.gentrification.rac <- st_intersection(lodes.rac, both.buff)
+
+lodes.gentrification.rac.csv <- lodes.gentrification.rac %>% 
+  st_drop_geometry() %>%
+  group_by(names, Sector, industry) %>%
+  summarize_if(is.numeric, sum)
+
+  write.csv(lodes.gentrification.rac.csv, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_rac.csv" )
+
+```
+
+
+```{R finding ratios, echo = F, results = 'hide', message = FALSE}
+rac.buffer <- lodes.gentrification.rac %>%
+  group_by(names, industry) %>%
+  summarize_if(is.numeric,sum) %>%
+  mutate("id" = paste0(industry, names))
+
+wac.buffer <- lodes.gentrification.wac %>%
+  group_by(names, industry) %>%
+  summarize_if(is.numeric,sum) %>%
+  mutate("id" = paste0(industry, names))
+
+
+rac.buffer.df <- rac.buffer %>% st_drop_geometry()
+wac.buffer.df <- wac.buffer %>% st_drop_geometry()
+
+rac.wac.ratio <- left_join(rac.buffer.df, wac.buffer.df, by = "id") %>%
+  select(id, "names" = names.x, "industry" = industry.x, "rac.10" = employment.2010.x,
+         "rac.19" = employment.2019.x, "wac.10" = employment.2010.y,
+         "wac.19" = employment.2019.y) %>%
+  mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
+                           industry == "Educational Services" | 
+                           industry == "Finance and Insurance"|
+                           industry == "Health Care and Social Assistance"| 
+                           industry == "Information" |
+                           industry == "Management of Companies and Enterprises" | 
+                           industry == "Professional, Scientific, and Technical Services" |
+                           industry == "Real Estate and Rental and Leasing", 
+                           "Professional", 
+                            ifelse(industry == "Accommodation and Food Services" |
+                                   industry == "Arts, Entertainment, and Recreation" |
+                                   industry == "Other Services (except Public Administration)" |
+                                   industry == "Retail Trade", 
+                                 "Services", 
+                                     ifelse(industry == "Construction" | 
+                                            industry == "Manufacturing" |
+                                            industry == "Transportation and Warehousing" |
+                                            industry == "Utilities" |
+                                            industry == "Wholesale Trade", "Production", "n/a")))) %>%
+  filter(Sector != "n/a")
+
+rac.wac.ratio <- rac.wac.ratio %>%
+  group_by(names, Sector) %>%
+  summarize_if(is.numeric, sum) %>%
+  mutate("ratio.10" = rac.10 / wac.10,
+         "ratio.19" = rac.19 / wac.19,
+         "ratio.change" = ratio.19 - ratio.10) %>%
+  left_join(both.buff, by = "names") %>%
+  st_as_sf()
+
+
+rac.wac.sectors.wide.csv <- rac.wac.sectors.wide %>%
+  st_drop_geometry()
+
+write.csv(rac.wac.sectors, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\racwacsectors.csv")
+st_write(rac.wac.sectors.wide, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\racwac_sectorbuffers\\sectorsbuff.shp")
+write.csv(rac.wac.sectors.wide.csv, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\racwacsectors_wide.csv")
+```
+Joining RAC/WAC
+```{R}
+
+flag <-tracts_flag %>%
+  select(GEOID, names) %>%
+  st_drop_geometry()
+
+buffer <- both.buff %>%
+  mutate("Production" = 0, "Professional" = 0, "Service" = 0) %>%
+  pivot_longer(cols = c("Production", "Professional", "Service"), names_to = "Sector") %>%
+  select(!c(value))
+
+st_write(buffer, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_tracts\\buffer.shp")
+
+lodes.rac.tracts <- lodes.rac %>%
+  st_drop_geometry() %>%
+  mutate("GEOID" = substr(h_geocode, 0, 11),
+         "id" = paste0(GEOID, industry)) %>%
+  group_by(GEOID, Sector, industry, id) %>%
+  summarize_if(is.numeric, sum) %>%
+    select(GEOID, id, "rac.10" = employment.2010, "rac.19" = employment.2019)
+
+lodes.wac.tracts <- lodes.wac %>%
+  st_drop_geometry() %>%
+  mutate("GEOID" = substr(w_geocode, 0, 11),
+         "id" = paste0(GEOID, industry),
+         ) %>%
+  group_by(GEOID, Sector, industry, id) %>%
+  summarize_if(is.numeric, sum) %>%
+    select(GEOID, id, "wac.10" = employment.2010, "wac.19" = employment.2019)
+
+
+lodes.tracts <- left_join(lodes.rac.tracts, lodes.wac.tracts, by = "id") %>%
+  select("Sector" = Sector.x, "industry" = industry.x, "GEOID" = GEOID.x, rac.10, rac.19, wac.10, wac.19) %>%
+    mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
+                           industry == "Educational Services" | 
+                           industry == "Finance and Insurance"|
+                           industry == "Health Care and Social Assistance"| 
+                           industry == "Information" |
+                           industry == "Management of Companies and Enterprises" | 
+                           industry == "Professional, Scientific, and Technical Services" |
+                           industry == "Real Estate and Rental and Leasing", 
+                           "Professional", 
+                            ifelse(industry == "Accommodation and Food Services" |
+                                   industry == "Arts, Entertainment, and Recreation" |
+                                   industry == "Other Services (except Public Administration)" |
+                                   industry == "Retail Trade", 
+                                 "Services", 
+                                     ifelse(industry == "Construction" | 
+                                            industry == "Manufacturing" |
+                                            industry == "Transportation and Warehousing" |
+                                            industry == "Utilities" |
+                                            industry == "Wholesale Trade", "Production", "n/a"))),
+           "new.wac" = wac.19 - wac.10,
+           "new.rac" = rac.19 - rac.10,
+           "racwac" = ifelse(new.wac > new.rac, "Local", "Resident"),
+           "id" = paste0(GEOID, industry))
+
+
+
+sectors <- lodes.tracts %>%
+  group_by(GEOID, Sector) %>%
+  summarize_if(is.numeric, sum) %>%
+  mutate("rr10" = round((rac.10 / wac.10), 2),
+         "rr19" = round((rac.19 / wac.19), 2),
+         "rc" = as.numeric(round((rr19 - rr10),2)),
+         "id" = paste0(GEOID,Sector))
+
+sectors <- sectors %>%
+  mutate(
+         "rr10" = ifelse(wac.10 < 50, NA, rr10),
+         "rr19" = ifelse(wac.10 < 50, NA, rr19),
+         "rc" = ifelse(wac.10 < 50, NA, rc)) %>%
+  left_join(gent.tracts, by = "GEOID") %>%
+  mutate(as.numeric(ifelse(popE_2010 > 1000, rc, "n/a"))) %>%
+  select(GEOID, popE_2010, rr10, rr19, rc, id)
+
+lodes.tracts <- lodes.tracts %>%
+  left_join(sectors, by = "id") %>%
+  mutate(rc = as.numeric(ifelse(is.finite(rc), rc, "n/a")))
+
+lodes.tracts <- lodes.tracts%>%
+  left_join(flag, by = "GEOID")
+
+lodes.tracts <- lodes.tracts %>%
+  select("GEOID" = GEOID.x, names, Sector, industry,
+         rac.10, rac.19, wac.10, wac.19, new.rac, new.wac,
+         rr10, rr19, rc) 
+
+lodes.tracts <- lodes.tracts %>% 
+  left_join(tracts, by = "GEOID") %>%
+  st_as_sf() 
+
+
+combined.tracts2 <- combined.tracts %>%
+  select(GEOID, popE_2010, popE_2019) %>%
+  st_drop_geometry()
+
+lodes.tracts2 <-lodes.tracts %>% left_join(combined.tracts2, by = "GEOID") %>%
+  #mutate("GEOID" = GEOID.x) %>%
+  mutate(rac.10 = ifelse(popE_2010 > 500, rac.10, NA),
+         rac.19 = ifelse(popE_2010 > 500, rac.19, NA),
+         rac.change = ifelse(popE_2010 > 500, rac.19 - rac.10, NA),
+         wac.change = wac.19 - wac.10)%>%
+  select(GEOID, names, Sector, industry, rac.10, rac.19, wac.10, wac.19, rac.change, wac.change,popE_2010)
+
+st_write(lodes.tracts2, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\shapefiles\\lodes_tracts2.shp", append=FALSE)
+```
+
+
+
+
+
+<b> Resident Job Ratios</b></br>
+Finally, we focus a great deal of our analysis on a measure we construct called "Resident Job Ratios". We construct this ratio to express the difference of jobs by industry of the residents on a region, to the total jobs that exist in a given region regardless by establishment location. LODES employs two measures for their employment data: Residential Area Characteristics and Work Area Characteristics. By calculating a ratio of the two, we can see the ratio of local to commuter jobs and better understand the labor market dynamics of a given region. Our ratio looks as follows;
+
+ 	$Resident \ Jobs\  Ratio: \displaystyle \frac{Residents \ in \ industry \ i \ in \ region \ n}{total \ jobs \ in \ industry \ i \ in \ region n}$
+ 	
+ * <b> A ratio above one: </b> There are more residents working in this industry than jobs that exist in this industry in a given region. Because there is a surplus of residents, we consider this a "bedroom community", that is where workers live and commute out.
+ * <b> A ratio below one: </b> There are fewer residents working in this industry than the jobs that exist in this industry in a given region. Because there is a deficit of workers in this industry in the region, we call this a "commuter community" as the region must be importing workers from elsewhere to close the gap between jobs that exist in this region and local residents that actually work in it.
+
+* A ratio that goes from above to below one is shifting from a bedroom to commuter community. At the start of the analysis period, workers in a given industry lived here and commuted elsewhere to work, but changes in the ratio means that by the end of the analysis period the region was actually importing workers and became a commuter community. 
+
+* A ratio that goes from below to above one if shifting from a commuter to a bedroom community. At the start of the analysis period, workers were commuting into the region to work in a given industry, however by the end there were more workers living in the area than jobs in a given industry so residents were now commuting out
+
+
+
+First, we look at the total RAC/WAC ratio for all industries in each of these areas. We group the regions into three categories based on their RAC/WAC ratios in 2010 and 2019:
+* 1) Stayed below one: these regions started with more jobs than residents, and stayed this way
+* 2) Jumped from below to above one: these regions had more jobs than residents in 2010, but their ratios 
+                                   jumped so they now have more residents than jobs.
+* 3) Stayed above one: these regions started with more jobs than residents, and stayed this way.
+
+
+<b> RAC and WAC totals in each area: </b>
+
+```{R rac wac totals, echo = F, message = FALSE}
+
+rac.wac.totals <- rac.wac.ratio %>%
+  group_by(names) %>%
+  summarize_at(c(3:6), sum) %>%
+  mutate("ratio.10" = round(rac.employment.2010 / wac.employment.2010, 3),
+         "ratio.19" = round(rac.employment.2019 / wac.employment.2019, 3),
+         "ratio.change" = ratio.19 - ratio.10)
+
+library(DT)
+DT::datatable(rac.wac.totals, 
+         #extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         scrollY = TRUE,
+                         paging=TRUE,
+                         fixedHeader=FALSE,
+                         rowWidth='10%'),
+         caption = " RAC / WAC Ratios, all industries")
+
+
+```
+
+
+```{R table, echo = F, message = FALSE}
+
+library(DT)
+DT::datatable(rac.wac.bin,
+         #extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         scrollY = TRUE,
+                         paging=TRUE,
+                         fixedHeader=FALSE,
+                         rowWidth='10%'),
+         caption = "Ratio bins")
+
+
+#rac.wac.bin.df <- as.data.frame(rac.wac.bin)%>%
+ #rac.wac.ratio <- write.csv("C:\\Users\\sffra\\Downloads\\phillyworks\\rac_wac_ratio.csv")
+```
+

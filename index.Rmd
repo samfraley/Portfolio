@@ -19,10 +19,10 @@ output: html_document
 
 # **Sam Fraley**
 
-I'm a Temple University Economics & Football alumni passionate about data and visualization.
+I'm a Temple University Economics & Football alumni passionate about data science, economics, story telling and visualization.
 
 ## Links
- [https://www.linkedin.com/in/sam-fraley-4a6681166/e](LinkedIn)
+ [LinkedIn](https://www.linkedin.com/in/sam-fraley-4a6681166/e)
 
 
 </div>
