@@ -1,9 +1,9 @@
 ---
-title: "Resources"
+title: "Projects"
 output: html_document
 ---
 
-### Projects
+<font size = "5"> <a href="gent_dashboard.html" title="Gentrification Interactive Dashboard">Gentrification Interactive Dashboard</a></font>
 
-<a href="gent_dashboard.html" title="Gentrification Interactive Dashboard">Gentrification Interactive Dashboard</a>
-
+<a href = "https://samfraley.github.io">
+![](images/gent_dashboard.png)
