@@ -8,1071 +8,1382 @@ output:
     number_sections: false
     toc_depth: 1
     #code_folding: hide
+
 ---
 
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
-```
-
-<b> Executive Summary </b> </br>
--In this report, we analyze the impact of gentrification on the labor market in Philadelphia from 2009 to 2019. We select tracts that gentrify if they experienced a disproportionate increase in residents with college degrees and disproportionate increase in median incomes.Using a "Resident's Ratio" for jobs, We find that gentrified tracts saw increases in local Service Sector jobs at a faster rate than the grwoth of local residents in the Service Sector. Gentrified areas thus are demonstrating a high demand for service sector labor that is outpacing the current available labor in this industry, 
-
-
-
-<b> Literature Review </b> </br>
-To determine our best model of analysis, we conducted literature review on empirical papers focusing on gentrification in the labor market.
-We drew our main inspiration from two papers: Meltzer & Ghorbani "Does gentrification increase employment opportunities in low-income neighborhoods?" (2017), and Freeman & Braconi "Gentrification and Displacement in New York City in the 1990s" (2004). Both authors define similar but unique criteria for "gentrified" tracts before conducting analysis on the impacts of gentrification on the labor market in their specific geographies and time periods.
-
-Meltzer & Ghorbani utilize LODES employment data, the Neighborhood Change Database, and National Establishment Time Series data to analyze changes in total "local" jobs. They create several "live-work" buffers ranging from 1/3 to 2 mile radii to capture employment levels surrounding gentrified tracts, and consider these buffers in the largest metropolitan statistical areas in the US. Controlling for MSA and state-year fixed effects, they run a series of ordinary least squares regressions to analyze the impact of a gentrification flag variable on total local jobs. Their results show a larger increase in commerical activity in gentrified areas compared to non, and that smaller live-work zones see high jobs losses compared to larger live work zones that see job gains. Conclude that gentrification has a negative impact on jobs in the immediate area, however larger zones of analysis make findings less consistent. Saw increase in goods producing and high wage jobs in the one-mile buffer, and that job gains in the 1-2 mile raidus seemed to offset the losses in the immediate live-work zones.
-
-Freeman & Braconi was one of the most commonly cited papers we came across in our background research, namely for the method they employed to identify gentrified tracts. <cont>
-
-<b> Methodology </b> </br>
-Combining the approach of Meltzer and Freeman, we construct a series of criteria for our analysis. Tracts must meet all criteria to gentrifier, but those that only meet the first two could be considered to have had the potential to gentrify but did not.
-
-* 1) Tracts must have experienced a historical disinvestment. We quantify this by the portion of housing stock built. A tract must have a lower portion of housing stock built over the 1980s-1990s compared to all of Philadelphia to meet this criteria.
-
-* 2) Tracts must have lower median income than the metropolitan statistical area in 2009. This selects tracts that were populated by poorer residents at the start of the gentrification period.
-
-* 3) Tracts must see an increase in both educational attainment and median income that is greater to the MSA level. We measure educational attainment by the percent of residents with at least a college degree. We then calculate measure ratios to compare the tract to the MSA, as calculated by: </br>
-
-$Measure \ Ratios: \displaystyle \frac{Tract Level Measure}{MSA Level Measure}$
- 	
-* A ratio greater than one indicates the tract level measure (median income, education level) is greater than the MSA, and below one indicates that that the tract level measure is below the MSA level. For example, 1.5 for median income indicates that the median income in a specific tract is 1.5 times that of the MSA. We calculate this ratio for 2009 and 2019, and find the change by subtracting the two and call this our "ratio change". We find the ratio change for the whole MSA and for each tract, and if a tract has a positive ratio change then we assume that the given measure (income, education) has increased greater than the whole MSA.
- 	
-* 4) The tract must see a positive increase in median home values.
- 	
- 	
- Even if a tract meets 1 and 2, if 3 and 4 are not met this means that there was not an exceptional increase in income or educational level, or positive change in home values, which would go against our assumptions about gentrification. We conduct statistically significance tests to filter out tracts that did not experience a statistically significant change in these measures.
- 
- 
-After we select these tracts, we generate a 100 meter buffer for each tract. We utilize this buffer to include block level LODES data that may not be inside of the tract, but realistically contains jobs that effect the labor force of our selected tract. 
-
-Our resulting buffer zone as follows:
-
-```{R Load Packaged and Pull Census Data, echo=FALSE, message=FALSE, results='hide'}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(car)
+library(blsAPI)
 library(tidycensus)
-library(tigris)
-library(sf)
-library(tmap)
-
-
-options(scipen = 999)
-
-tidycensus::census_api_key("efb15fadd3651f2489c405d47fb1c3d1f561adbd")
-
-
-variables <- tidycensus::load_variables(2019, "acs5")
-variables09 <- tidycensus::load_variables(2009, "acs5")
-
-
-tracts.2019 <- get_acs(geography = "tract",
-                       year = 2019,
-                       state = "PA",
-                       county = 101,
-                       variables = c(hhinc = "B19013_001",
-                                     bach = "B23006_023",
-                                     edu.total = "B23006_001",
-                                     home.value = "B25077_001",
-                                     pop = "B01003_001"),
-                       output = "wide") %>%
-  mutate(Year = "2019") 
-
-
-
-msa.2019 <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
-                    year = 2019,
-                    variables = c(hhinc = "B19013_001",
-                                  bach = "B23006_023",
-                                  edu.total = "B23006_001"),
-                    output = "wide") %>%
-  mutate(Year = "2019") %>%
-  filter(GEOID == "37980")
-
-
-
-tracts.2010 <- get_acs(geography = "tract",
-                       year = 2010,
-                       state = "PA",
-                       county = 101,
-                       variables = c(hhinc = "B19013_001",
-                                     bach = "B23006_023",
-                                     edu.total = "B23006_001",
-                                     home.value = "B25077_001",
-                                     pop = "B01003_001"),
-                       output = "wide") %>%
-  mutate(Year = "2010") 
-
-msa.2010 <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
-                    year = 2010,
-                    variables = c(hhinc = "B19013_001",
-                                  bach = "B23006_023",
-                                  edu.total = "B23006_001"),
-                    output = "wide") %>%
-  mutate(Year = "2010") %>%
-  filter(GEOID == "37980")
-
+library(jsonlite)
+library(lubridate)
+library(janitor)
+library(formattable)
+library(scales)
+library(gt)
+library(stringr)
+library(gghighlight)
+library(fuzzyjoin)
+library(eeptools)
+library(rJava)
+library(tabulizer)
+library(zoo)
+library(anytime)
 ```
 
-```{R Creating the Disinvestment Flag, echo = F, results = 'hide', message = FALSE}
-
-
-
-msa.disinvest <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
-                         year = 2019,
-                         variables = c(units.70s = "B25034_007",
-                                       units.80s = "B25034_006",
-                                       units.total = "B25034_001"),
-                         output = "wide") %>%
-  filter(GEOID == "37980") %>%
-  mutate(units.share = (units.70sE + units.80sE)/units.totalE)
-
-tracts.disinvest <- get_acs(geography = "tract",
-                            year = 2019,
-                            state = "PA",
-                            county = 101,
-                            variables = c(units.70s = "B25034_007",
-                                          units.80s = "B25034_006",
-                                          units.total = "B25034_001"),
-                            output = "wide") %>%
-  mutate(units.share = (units.70sE + units.80sE)/units.totalE,
-         disinvestment = units.share/ msa.disinvest$units.share,
-         disinvestment.flag = ifelse(disinvestment < 1, 1, 0)) %>%
-  dplyr::select(GEOID, units.share, disinvestment, disinvestment.flag)
-```
-
-```{R Pulling Geography Files from Tigris, echo = F, results = 'hide', message = FALSE}
-#### Pulling Tigris Data ####
-
-options(tigris_use_cache=TRUE)
-tracts <- tigris::tracts(state = "PA", county = 101, year = 2019) %>% st_as_sf()
-block.grps <- tigris::block_groups(state = "PA", county = 101, year = 2019)
-blocks <- tigris::blocks(state="PA", county = 101, year = 2019) %>%
-  mutate(id = GEOID10)
-#mutate new id field to join w/ the LODES data
-```
-
-```{R Creating the Gentrification Flags, echo = F, results = 'hide', message = FALSE}
-
-combined.msa <- rbind(msa.2019, msa.2010) %>%
-  pivot_wider(names_from = Year,
-              values_from = 3:8) %>%
-  mutate(msa.bach.share.2019 = bachE_2019 / edu.totalE_2019,
-         msa.bach.share.2010 = bachE_2010 / edu.totalE_2010) %>%
-  dplyr::select(1:4,15:16)
-
-
-combined.tracts <- rbind(tracts.2019, tracts.2010) %>%
-  pivot_wider(names_from = Year,
-              values_from = 3:12) %>%
-  mutate(inc.sig = significance(hhincE_2019, hhincE_2010, hhincM_2019, hhincM_2010),
-         bach.sig = significance(bachE_2019, bachE_2010, bachM_2019, bachM_2010),
-         home.sig = significance(home.valueE_2019, home.valueE_2010, home.valueM_2019, home.valueM_2010),
-         pop.sig = significance(popE_2019, popE_2010, popM_2010, popM_2010),
-         bach.share.2019 = bachE_2019 / edu.totalE_2019,
-         bach.share.2010 = bachE_2010 / edu.totalE_2010,
-         hhinc.ratio.2019 = hhincE_2019/combined.msa$hhincE_2019,
-         hhinc.ratio.2010 = hhincE_2010/combined.msa$hhincE_2010,
-         hhinc.relative.change = ifelse(inc.sig == TRUE, 
-                                        (hhincE_2019/combined.msa$hhincE_2019) - (hhincE_2010/combined.msa$hhincE_2010),
-                                        NA),
-         bach.relative.change = ifelse(bach.sig == TRUE, bach.share.2019 - bach.share.2010, NA),
-         home.value.change = ifelse(home.sig == TRUE, home.valueE_2019 - home.valueE_2010, NA)) %>%
-  full_join(tracts.disinvest) %>%
-  left_join(tracts, by = "GEOID") %>%
-  st_as_sf()
-
-selection.tracts <- combined.tracts %>%
-  mutate(pop.sig = significance(popE_2019, popE_2010, popM_2019, popM_2010),
-         pop.relative.change = ifelse(pop.sig == TRUE, popE_2019 - popE_2010,NA))
-
-selection.tracts2 <- selection.tracts %>%
-  mutate(popE_2010 = ifelse(pop.sig == TRUE, popE_2010, NA),
-         popE_2019 = ifelse(pop.sig == TRUE, popE_2019, NA),
-         hhincE_2010 = ifelse(inc.sig == TRUE, hhincE_2010, NA),
-         hhincE_2019 = ifelse(inc.sig == TRUE, hhincE_2019, NA),
-         bach.share.2010 = ifelse(bach.sig == TRUE, bach.share.2010, NA),
-         bach.share.2019 = ifelse(bach.sig == TRUE, bach.share.2019, NA),
-         home.valueE_2010 = ifelse(home.sig, home.valueE_2010, NA),
-         home.valueE_2019 = ifelse(home.sig == TRUE, home.valueE_2019, NA)) %>%
-  select(GEOID, "Population_2010" = popE_2010, "Population_2019" = popE_2019, 
-         "Income_2010" = hhincE_2010, "Income_2019" = hhincE_2019, 
-         "Education_2010" = bach.share.2010, "Education_2019" = bach.share.2019,
-         "HomeValue_2010" = home.valueE_2010, "HomeValue_2019" = home.valueE_2019) %>%
-  mutate(Education_2010 = 100 * round(Education_2010, 3),
-         Education_2019 = 100 * round(Education_2019, 3)) %>%
-  pivot_longer(2:9, names_to =  c("indicator","year"), values_to = "estimate", names_sep = "_") %>%
-  pivot_wider(values_from = estimate, names_from = year) %>%
-  mutate(measure.change = selection.tracts2$'2019' - selection.tracts2$'2010')
-
-
-st_write(selection.tracts2,"C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\shapefiles\\selection_tracts2.shp", append = FALSE )
-
-
-
-selection.tracts <- selection.tracts %>%
-  left_join(tracts, by = "GEOID")
-
-  dplyr::select(1:2,20,22:34)
-
-options(scipen=999)
-
-st_write(selection.tracts, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\shapefiles\\selection_tracts.shp")
-
-gent.tracts <- combined.tracts %>%
-  mutate(low.inc.flag = ifelse(hhinc.ratio.2010 > 1 | is.na(hhinc.ratio.2010), 0, 1),
-         inc.change.flag = ifelse(hhinc.relative.change < 0 | is.na(hhinc.relative.change), 0, 1),
-         edu.change.flag = ifelse(bach.relative.change < 0 | is.na(bach.relative.change), 0, 1),
-         value.change.flag = ifelse(home.value.change < 0 | is.na(home.value.change), 0, 1),
-         gentrification.flag.edu = ifelse(low.inc.flag == 1 & edu.change.flag == 1 & 
-                                            disinvestment.flag == 1 & value.change.flag == 1, "Gentrifying", "Not Gentrifying"),
-         gentrification.flag.inc = ifelse(low.inc.flag == 1 & inc.change.flag == 1 & 
-                                            disinvestment.flag == 1 & value.change.flag == 1, "Gentrifying", "Not Gentrifying"),
-         either.gentrification.flag = ifelse(gentrification.flag.edu == "Gentrifying" | 
-                                             gentrification.flag.inc == "Gentrifying", "Gentrifying", "Not Gentrifying"),
-         both.gentrification.flag = ifelse(gentrification.flag.edu == "Gentrifying" &
-                                               gentrification.flag.inc == "Gentrifying", "Gentrifying", "Not Gentrifying"),
-         both.gentrification.cat = ifelse(both.gentrification.flag == "Gentrifying" & hhinc.ratio.2019 > 1,
-                                          "Fully Gentrified",both.gentrification.flag), 
-        either.gentrification.cat = ifelse(either.gentrification.flag == "Gentrifying" & hhinc.ratio.2019 > 1,
-                                           "Fully Gentrified", either.gentrification.flag)) %>%
-  full_join(tracts, by = "GEOID") %>%
-  st_as_sf()
-
-
-
-gent_tracts <- gent.tracts %>%
-  mutate("GentCat" = ifelse(disinvestment.flag == 1 & low.inc.flag == 1 &
-                                    inc.change.flag == 0 & edu.change.flag == 0 &
-                                  value.change.flag == 0, "Could Have Gentrified", both.gentrification.cat)) %>%
-filter(GEOID != "42101000401",
-       GEOID !="42101000402",
-       GEOID != "42101000600")
-
-
-```
-
-```{R tracts map, echo = F, results = 'hide', message = F}
-
-catcolors <- c("#47525f", "#f15e22", "#ffcc3b", "#a39d93")
-
-options(tigris_use_cache = TRUE)
-county <- tigris::counties(state = "PA") %>%
-  subset(COUNTYFP == "101")
-tracts <- tigris::tracts(state="PA", county = "101", year = 2019) %>% sf::st_as_sf() 
-streets <- tigris::primary_secondary_roads("PA")%>%
-  st_transform("NAD83") %>%
-  st_intersection(county)
-hydro <- tigris::area_water("PA", county = "Philadelphia")%>%
-  st_transform("NAD83")
-
-
-gent_cat_map <-
-tm_shape(streets, 
-         bbox = st_buffer(county, 2000),
-         unit = "mi") +
-  tm_lines(col="grey40",
-           lwd = 1.8) +
-tm_shape(gent_tracts) +
-  tm_polygons(col = "GentCat",
-              title = "Gentrified Areas",
-              style = "cat",
-              palette = catcolors,
-              id="total",
-              alpha=.75,
-              border.col = "black", 
-              border.alpha = .2,
-              showNA = T, 
-              textNA = "No Data") +
-  tm_layout(frame = F,
-            legend.position = c(.65, .08),
-            legend.outside=F,
-            legend.text.size = .8,
-            legend.title.fontface = "bold", 
-            legend.title.size = 1) +
-  tm_scale_bar(position = c("left", "bottom"), breaks = c(0,2,4)) +
-  tm_shape(county) +
-  tm_borders(col="grey70", lwd = 4) +
-  tm_shape(hydro) +
-  tm_polygons(col = "lightblue",
-              border.alpha = .5)
-
-
-
-
-tmap_save(gent_cat_map, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_cat.png")
-         
-```
-
-```{R Creating Gentrification Buffers, echo = F, results = 'hide', message = FALSE}
-
-names = c("Fisher Park / Olney 4th Street", "East Falls / Hunting Industrial", "Manayunk / Roxbourough",
-        "East Mt. Airy", "Malcolm X. Park / Cobbs Creek", "Cathedral Park / West Parkside",
-        "Cecil B. Moore South / Chinatown", "Point Breeze / South Philly",
-        "Fishtown / Port Richmond / East Kensington")
-
-names2 = c("Malcolm X. Park / Cobbs Creek",
-           "Cecil B. Moore South / Chinatown",
-           "Fishtown / Port Richmond / East Kensington",
-           "Manayunk / Roxbourough",
-           "Cathedral Park / West Parkside",
-           "East Falls / Hunting Industrial", 
-           "Point Breeze / South Philly",
-           "Cecil B. Moore South / Chinatown",
-           "East Mt. Airy", 
-           "Point Breeze / South Philly",
-           "Fisher Park / Olney 4th Street")
-
-
-region = c("Upper North", "North West", "North West",
-         "Upper North West", "West", "West Park",
-         "Lower North", "South", "River Wards")
-
-
-gent.both <- gent.tracts %>%
- subset(both.gentrification.flag == "Gentrifying" & !GEOID %in% c("42101000401",
-                                                                  "42101000402",
-                                                                  "42101000600"))#removing tracts in CBD
-
-#gent.arc <- gent.both %>%
- # select(GEOID)
-
-#st_write(gent.arc, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gentrified_tracts\\tracts2.shp")
-
-both.dissolve <- gent.both %>%
- st_union(.,by_feature = F) %>% st_as_sf()
-
-both.buff <- both.dissolve %>%  
-  st_as_sf() %>%
-  st_transform(crs = st_crs("NAD83")) %>%
-  st_buffer(100) %>%
-  st_cast("POLYGON") %>%
-  mutate(gentrification.area = as.character(1:n()),
-         names = names,
-         names_wrap = str_wrap(names, 10))
-
-both.buff2 <- both.dissolve %>%  
-  st_as_sf() %>%
-  st_transform(crs = st_crs("NAD83")) %>%
-  st_buffer(0) %>%
-  st_cast("POLYGON") %>%
-  mutate(gentrification.area = as.character(1:n()),
-         names = names2,
-         names_wrap = str_wrap(names, 10))
-
-tracts_flag <- st_join(tracts, both.buff2)
-
-
-
-
-
-
-nhoods <- sf::read_sf("C:\\Users\\sffra\\Downloads\\PhillyPlanning_Neighborhoods\\PhillyPlanning_Neighborhoods.shp")
-
-```
-
-```{R gent map, echo=F, message = FALSE}
-
-county <- tigris::counties(state = "PA") %>%
-  subset(COUNTYFP == "101")
-tracts <- tigris::tracts(state="PA", county = "101") %>% sf::st_as_sf() 
-streets <- tigris::primary_secondary_roads("PA")%>%
-  st_transform("NAD83") %>%
-  st_intersection(county)
-hydro <- tigris::area_water("PA", county = "Philadelphia")%>%
-  st_transform("NAD83")
-
-
-buffermap <-
-tm_shape(streets, 
-         bbox = st_buffer(county, 2000),
-         unit = "mi") +
-  tm_lines(col="grey40",
-           lwd = 1.8) +
-tm_shape(both.buff) +
-  tm_polygons(col = "#3349b0",
-              title = "Gentrified Areas",
-              style = "cont",
-              palette = "PuBu",
-              id="total",
-              alpha=.75,
-              border.col = "black", 
-              border.alpha = .2,
-              showNA = T, 
-              textNA = "No Data") +
-  tm_layout(frame = F,
-            legend.position = c(.65, .08),
-            legend.outside=F,
-            legend.text.size = .8,
-            legend.title.fontface = "bold", 
-            legend.title.size = 1) +
-  tm_scale_bar(position = c("left", "bottom"), breaks = c(0,2,4)) +
-  tm_shape(county) +
-  tm_borders(col="grey70", lwd = 4) +
-  tm_shape(hydro) +
-  tm_polygons(col = "lightblue",
-              border.alpha = .5)
-
-
-
-
-tmap_save(buffermap, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\buffermap.png")
-
-#nhoods <- sf::read_sf("C:\\Users\\mhutton\\OneDrive - Philadelphia Works Inc\\R and ArcGIS Reference Library\\Neighborhoods_Philadelphia\\Neighborhoods_Philadelphia.shp")
-
-```
-
-```{R change over time, echo = F, results = 'hide', message = FALSE}
-
-gent.flag <- gent.tracts %>%
-  select(GEOID, gentrification.flag.edu, gentrification.flag.inc, both.gentrification.flag, both.gentrification.cat)
-
-years <- c(2010:2019)
-
-#loop through using map_dfr
-tracts.i<- map_dfr(years, ~{get_acs(geography = "tract",
-                                    year = .x,
-                                    state = "PA",
-                                    county = 101,
-                                    variables = c(hhinc = "B19013_001",
-                                                  bach = "B23006_023",
-                                                  edu.total = "B23006_001",
-                                                  home.value = "B25077_001"),
-                                    output = "wide")
-                             }, .id = "year")%>%
-              mutate("bach.share" = bachE / edu.totalE,
-                     "year" = 2009 + as.numeric(year)) %>%
-              left_join(gent.flag, by = "GEOID") %>%
-              mutate("gent.flag" = ifelse(both.gentrification.flag == "Gentrifying", 1, 0))
-
-
-tracts.i.sum <- tracts.i %>%
+
+```{r cars, message=FALSE, warning=FALSE}
+year.current = '2023'
+quarter.current ='1'
+
+#### LAUS for Philadelphia, Pennsylvania, and National ####
+#Philadelphia LAUS
+payload2 <- list('seriesid' = c('LAUCN421010000000003',
+                                'LAUCN421010000000004',
+                                'LAUCN421010000000005',
+                                'LAUCN421010000000006'), 
+                 'startyear'='2010', 
+                 'endyear' = '2030', 
+                 'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+
+LAUS2 <- blsAPI(payload2, api_version = 2, return_data_frame = T)
+
+LAUS.phl <- LAUS2 %>%
+  pivot_wider(names_from = 'seriesID',
+              values_from = 'value') %>%
+  rename('unemp.rate' = 'LAUCN421010000000003',
+         'total.unemployed' = 'LAUCN421010000000004',
+         'total.employed' = 'LAUCN421010000000005',
+         'labor.force' = 'LAUCN421010000000006') %>%
+  mutate(area = "Philadelphia")
+
+
+
+# LAUS for Pennsylvania 
+payload2 <- list('seriesid' = c('LAUST420000000000003',
+                                'LAUST420000000000004',
+                                'LAUST420000000000005',
+                                'LAUST420000000000006'), 
+                 'startyear'='2010', 
+                 'endyear' = '2030', 
+                 'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+LAUS2 <- blsAPI(payload2, api_version = 2, return_data_frame = T)
+
+LAUS.pa <- LAUS2 %>%
+  pivot_wider(names_from = 'seriesID',
+              values_from = 'value') %>%
+  rename('unemp.rate' = 'LAUST420000000000003',
+         'total.unemployed' = 'LAUST420000000000004',
+         'total.employed' = 'LAUST420000000000005',
+         'labor.force' = 'LAUST420000000000006') %>%
+  mutate(area = "Pennsylvania")
+
+
+# National Employment 
+payload2 <- list('seriesid' = c('LNU01000000',
+                                'LNU02000000',
+                                'LNU03000000',
+                                'LNU04000000'), 
+                 'startyear'='2010', 
+                 'endyear' = '2030', 
+                 'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+LAUS2 <- blsAPI(payload2, api_version = 2, return_data_frame = T)
+
+LAUS.us <- LAUS2 %>%
+  pivot_wider(names_from = 'seriesID',
+              values_from = 'value') %>%
+  rename('unemp.rate' = 'LNU04000000',
+         'labor.force' = 'LNU01000000',
+         'total.employed' = 'LNU02000000',
+         'total.unemployed' = 'LNU03000000') %>%
+  mutate(area = "United States",
+         labor.force = as.numeric(labor.force)*1000,
+         total.employed = as.numeric(total.employed)*1000,
+         total.unemployed = as.numeric(total.unemployed)*1000)
+
+#Merging All Three Areas
+
+LAUS <- rbind(LAUS.phl,LAUS.pa,LAUS.us) %>% 
+  mutate(period = paste(periodName, year, sep=" ")) %>%
+  dplyr::select(!c(year, periodName))
+
+#Converting to Long Format
+
+LAUS_long <- LAUS %>% 
+  pivot_longer(cols=unemp.rate:labor.force) %>%
+  mutate(date = parse_date_time(period, orders = "my")) %>%
+  mutate(value = as.numeric(value))
+
+
+#### LAUS Employment and Labor Force Charts ####
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+
+
+LAUS_long %>%
+ subset(name %in% c("total.employed", "total.unemployed")) %>%
+  subset(area == "Philadelphia") %>%
+  ggplot(aes(x = date, y= value, 
+             fill = factor(name, levels=c("total.unemployed","total.employed")))) +
+  geom_area(color = "white") +
+  scale_y_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6))+
+  coord_cartesian(ylim=c(500000,NA), expand = F) +
+  scale_fill_manual(labels = c("Total Labor Force", "Total Employment"), values = c("#dbd7d1","#007abd")) +
+  theme_classic() +
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y")+
+  labs(x=NULL,y="Philadelphia Residents")+
+  theme(legend.position="top", legend.title=element_blank(), 
+        axis.text.x = element_text(angle = 45, vjust = .5, size=10, color="black"), 
+        axis.title.y = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 10, color="black"),
+        axis.text.y = element_text(size=10, color="black"),
+        legend.text = element_text(size=9, color="black", face="bold"),
+        panel.grid = element_blank()) 
+ggsave("Figure 1 Employment and Labor Force.png",
+         height=4, width = 7.5, units = "in")
+
+# Relative Employment Change
+LAUS %>%
+  mutate(date = parse_date_time(LAUS$period, orders = "my")) %>%
+  filter(date >= "2020-01-01") %>%
+  mutate(total.employed = as.numeric(total.employed)) %>%
+  arrange(date, date) %>%
+  group_by(area) %>%
+  mutate(change = (total.employed/first(total.employed) - 1)) %>%
+  ggplot(aes(x= date, y=change, 
+             alpha = factor(area, levels = c("Philadelphia", "Pennsylvania", "United States")), 
+             group = factor(area, levels = c("Philadelphia", "Pennsylvania", "United States")))) +
+  geom_line(aes(color=factor(area, levels = c("Philadelphia", "Pennsylvania", "United States"))),
+            size=2) +
+  scale_alpha_manual(values = c(1, .6,.5)) +
+  scale_y_continuous(labels=percent_format(accuracy=1), breaks = seq(-1, 1, by = .02),
+                     sec.axis = dup_axis())+
+  scale_color_manual(values = c("#007abd","#005a8d","#47525f")) +
+  theme_minimal() +
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y", expand = c(.05,0))+
+  labs(x=NULL,y="Percent Change in Employment")+
+  theme(legend.position="top", legend.title=element_blank(), 
+        axis.text.x = element_text(size=11, color="black"), 
+        axis.title.y = element_text(face="bold", size = 11, color="black"),
+        axis.text.y = element_text(size=11, color="black"),
+        legend.text = element_text(size=11, color="black", face="bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_hline(aes(yintercept = 0))
+ggplot2::ggsave("Figure 3 Relative Employment.png",
+                height =4, width = 7.5, units = "in")
+
+
+           
+# Unemployment Rate
+LAUS %>%
+  mutate(date = parse_date_time(LAUS$period, orders = "my")) %>%
+  filter(date >= "2019-01-01") %>%
+  mutate(unemp.rate = as.numeric(unemp.rate)) %>%
+  ggplot(aes(x=date, y=unemp.rate/100,
+             alpha = factor(area, levels = c("Philadelphia", "Pennsylvania", "United States")), 
+             group = factor(area, levels = c("Philadelphia", "Pennsylvania", "United States")))) +
+  geom_line(aes(color=factor(area, levels = c("Philadelphia", "Pennsylvania", "United States"))),
+            size=2) +
+  scale_alpha_manual(values = c(1, .6,.5)) +
+  scale_y_continuous(labels=percent_format(accuracy=1), breaks = seq(-1, 1, by = .02),
+                     sec.axis =  dup_axis())+
+  scale_color_manual(values = c("#007abd","#172151","#47525f")) +
+  coord_cartesian(ylim=c(0,NA)) +
+  theme_minimal() +
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y") +
+  labs(x=NULL,y="Unemployment Rate")+
+  theme(legend.position="top", legend.title=element_blank(), 
+        axis.text.x = element_text(size=11, color="black"), 
+        axis.title.y = element_text(face="bold", size = 11, color="black"),
+        axis.text.y = element_text(size=11, color="black"),
+        legend.text = element_text(size=10, color="black", face="bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_hline(yintercept = .06)
+ggplot2::ggsave("Figure 2 Unemployment Rate.png",
+       height =5, width = 5, units = "in")
+
+
+#Getting Call Out Figures
+unemp.rate <- LAUS.phl %>%
+  head(n=1) %>%
+  dplyr::select(1:4)
+feb2020.emp <- LAUS.phl %>% 
+  mutate(period = paste(periodName, year, sep=" ")) %>%
+  dplyr::select(period, total.employed) %>%
+  subset(period == "February 2020")
+feb2020.lf <- LAUS.phl %>% 
+  mutate(period = paste(periodName, year, sep=" ")) %>%
+  dplyr::select(period, labor.force) %>%
+  subset(period == "February 2020")
+emp.change <- LAUS.phl %>% 
+  mutate(period = paste(periodName, year, sep=" ")) %>%
+  dplyr::select(period, total.employed) %>% 
+  head(n=1) %>%
+  mutate(period = "Most Recent Month") %>%
+  rbind(feb2020.emp) %>%
+  pivot_wider(names_from = period, values_from = total.employed) %>%
+  mutate(`Change since Feb 2020` = as.numeric(`Most Recent Month`) - as.numeric(`February 2020`)) %>%
+  dplyr::select(`Change since Feb 2020`)
+lf.change <- LAUS.phl %>% 
+  mutate(period = paste(periodName, year, sep=" ")) %>%
+  dplyr::select(period, labor.force) %>% 
+  head(n=1) %>%
+  mutate(period = "Most Recent Month") %>%
+  rbind(feb2020.lf) %>%
+  pivot_wider(names_from = period, values_from = labor.force) %>%
+  mutate(`Change since Feb 2020` = as.numeric(`Most Recent Month`) - as.numeric(`February 2020`)) %>%
+  dplyr::select(`Change since Feb 2020`)
+
+
+#### LAUS for Comp Set ####
+
+payload <- list('seriesid' = c('LAUMT423798000000005',
+                               'LAUMT363562000000005',
+                               'LAUMT114790000000005',
+                               'LAUMT171698000000005',
+                               'LAUMT241258000000005',
+                               'LAUMT257165000000005',
+                               'LAUMT063108000000005',
+                               'LAUMT482642000000005',
+                               'LAUMT131206000000005'), 
+                'startyear'='2020', 
+                'endyear' = '2030', 
+                'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+
+LAUS.comp <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(Month = my(paste(periodName, year, sep = " "))) %>%
+  mutate(City = case_when( seriesID == 'LAUMT423798000000005' ~ "Philadelphia" ,
+                           seriesID == 'LAUMT363562000000005' ~ "New York City",
+                           seriesID == 'LAUMT114790000000005' ~ "Washington, DC",
+                           seriesID == 'LAUMT171698000000005' ~ "Chicago",
+                           seriesID == 'LAUMT241258000000005' ~ "Baltimore",
+                           seriesID == 'LAUMT257165000000005' ~ "Boston",
+                           seriesID == 'LAUMT063108000000005' ~ "Los Angeles",
+                           seriesID == 'LAUMT482642000000005' ~ "Houston",
+                           seriesID == 'LAUMT131206000000005' ~ "Atlanta"))
+
+
+LAUS.comp.12 <- LAUS.comp %>%
+  dplyr::group_by(City) %>%
+  slice_max(Month, n=12) %>%
+  dplyr::select(City, Month, value) %>%
+  mutate(value = as.numeric(value)) %>%
+  pivot_wider(names_from = Month, values_from = value) %>%
+  dplyr::ungroup() %>%
+  mutate(`Year-Over-Year Change` = (.[[2]] - .[[13]])/.[[13]]) %>%
+  dplyr::select(City, `Year-Over-Year Change`)
+
+LAUS.comp.recent <- LAUS.comp %>%
+  dplyr::group_by(City) %>%
+  slice_max(Month, n=1) %>%
+  dplyr::select(City, Month, value) %>%
+  mutate(recent.emp = as.numeric(value)) 
+
+LAUS.comp.recovery <- LAUS.comp %>%
+  mutate(value = as.numeric(value)) %>%
+  dplyr::filter(Month == "2020-02-01") %>%
+  mutate(Employment.Feb2020 = value) %>%
+  dplyr::select(City, Employment.Feb2020) %>%
+  left_join(LAUS.comp.recent) %>%
+  mutate(`Change Since February 2020` = (recent.emp - Employment.Feb2020)/Employment.Feb2020) %>%
+  dplyr::select(City, Month, `Change Since February 2020`) %>%
+  left_join(LAUS.comp.12)
+
+rm(LAUS.comp, LAUS.comp.12, LAUS.comp.recent, payload)
+
+LAUS.comp.recovery %>%
+  mutate(highlight = ifelse(City == "Philadelphia", "yes", "no")) %>%
+  ggplot(aes(y=reorder(City, `Change Since February 2020`), x= `Change Since February 2020`, 
+             fill = highlight, label =`Change Since February 2020`))+
+  geom_col() +
+  scale_fill_manual(values = c("yes" = "#007abd", "no" = "#dbd7d1")) +
+  theme_minimal() +
+  scale_x_continuous(labels=percent_format(accuracy=1), breaks = seq(-1, 1, by = .01)) +
+  labs(x="Percent Change in Employment", y="Metropolitan Statisitical Area")+
+  theme(legend.position="none", legend.title=element_blank(), 
+        axis.text.x = element_text(vjust = .5, size=10, color="black"), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.text.y = element_text(vjust = .5, size=10, color="black", face = "bold"), 
+        legend.text = element_text(size=10, color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_vline(aes(xintercept = 0))
+ggsave("Figure 4 Comp Set Recovery Change.png",
+       height=5, width = 5, units = "in")
+
+
+LAUS.comp.recovery %>%
+  mutate(highlight = ifelse(City == "Philadelphia", "yes", "no")) %>%
+  ggplot(aes(y=reorder(City, `Year-Over-Year Change`), x= `Year-Over-Year Change`, fill = highlight))+
+  geom_col() +
+  scale_fill_manual(values = c("yes" = "#007abd", "no" = "#dbd7d1")) +
+  theme_minimal() +
+  scale_x_continuous(labels=percent_format(accuracy=1), breaks = seq(-1, 1, by = .01)) +
+  labs(x="Percent Change in Employment", y="Metropolitan Statisitical Area")+
+  theme(legend.position="none", legend.title=element_blank(), 
+        axis.text.x = element_text(vjust = .5, size=10, color="black"), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.text.y = element_text(vjust = .5, size=10, color="black", face = "bold"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_vline(aes(xintercept = 0))
+ggsave("Figure 5 Comp Set Year-Over-Year Change.png",
+       height=5, width = 5, units = "in")
+
+#### Industry Employment for MSA ####
+payload <- list(
+  'seriesid'=c('SMU42379800000000001', #Nonfarm Employment
+               'SMU42379801500000001', #Mining, Logging, and Construction
+               'SMU42379803000000001', #Manufacturing
+               'SMU42379804100000001', #Wholesale Trade
+               'SMU42379804200000001', #Retail Trade
+               'SMU42379804300000001', #Transportation and Utilities
+               'SMU42379805000000001', #Information
+               'SMU42379805552000001', #Finance and Insurance
+               'SMU42379806000000001', #Professional and Businees Services
+               'SMU42379806500000001', #Education and Health Services
+               'SMU42379807000000001'  #Leisure and Hospitality
+  ), 
+  'startyear'=2015,
+  'endyear'=2030, 
+  'registrationKey' = '160c8d9a0e7c40bcada565263a877b85')
+
+ces.employment <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(Industry = case_when(seriesID ==  'SMU42379800000000001' ~ "Nonfarm Employment",
+                              seriesID == 'SMU42379801500000001' ~ "Mining, Logging, and Construction",
+                              seriesID == 'SMU42379803000000001' ~ "Manufacturing",
+                              seriesID == 'SMU42379804100000001' ~ "Wholesale Trade",
+                              seriesID == 'SMU42379804200000001' ~ "Retail Trade",
+                              seriesID == 'SMU42379804300000001' ~ "Transportation and Utilities",
+                              seriesID == 'SMU42379805000000001' ~ "Information",
+                              seriesID == 'SMU42379805552000001' ~ "Finance and Insurance",
+                              seriesID == 'SMU42379806000000001' ~ "Professional and Business Services",
+                              seriesID == 'SMU42379806500000001' ~ "Education and Health Services",
+                              seriesID == 'SMU42379807000000001'  ~ "Leisure and Hospitality"),
+         Employment = as.numeric(value) * 1000) %>%
+  mutate(Month = my(paste(periodName, year, sep = " "))) 
+
+
+
+
+most.recent.employment <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month) %>%
+  dplyr::select(Industry, Month, Employment)
+
+month.change <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month, n=2) %>%
+  dplyr::select(Industry, Month, Employment) %>%
+  pivot_wider(names_from = Month, values_from = Employment) %>%
+  dplyr::ungroup() %>%
+  mutate(`Month-Over-Month Change` = .[[2]] - .[[3]]) %>%
+  dplyr::select(Industry, `Month-Over-Month Change`)
+
+year.change <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month, n=12) %>%
+  dplyr::select(Industry, Month, Employment) %>%
+  pivot_wider(names_from = Month, values_from = Employment) %>%
+  dplyr::ungroup() %>%
+  mutate(`Year-Over-Year Change` = .[[2]] - .[[13]]) %>%
+  dplyr::select(Industry, `Year-Over-Year Change`)
+
+pandemic.change <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  dplyr::filter(Month == "2020-02-01") %>%
+  mutate(Employment.Feb2020 = Employment) %>%
+  dplyr::select(Industry, Employment.Feb2020) %>%
+  left_join(most.recent.employment) %>%
+  mutate(`Change Since February 2020` = Employment - Employment.Feb2020) %>%
+  dplyr::select(Industry, `Change Since February 2020`)
+
+employment.summary <- most.recent.employment %>%
+  left_join(month.change) %>%
+  left_join(year.change) %>%
+  left_join(pandemic.change) %>%
+  distinct() %>%
+  dplyr::select(!(Month))
+
+rm(most.recent.employment, month.change, year.change, pandemic.change, payload)
+
+employment.summary %>%
+  filter(Industry != "Nonfarm Employment") %>%
+  arrange(desc(Employment)) %>%
+  ungroup() %>%
+  gt() %>%
+  cols_align(align = "center", columns = c(Employment, `Month-Over-Month Change`, `Year-Over-Year Change`, 
+                                           `Change Since February 2020`))%>%
+  cols_align(align = "left", columns = Industry) %>%
+  fmt_number(sep_mark = ",", decimals = 0,
+             columns = c(Employment, `Month-Over-Month Change`, `Year-Over-Year Change`, 
+                                         `Change Since February 2020`)) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#007abd"),
+      cell_text(weight = "bold", color="white", font = "Helvetica")),
+    locations = list(cells_column_labels(columns = everything()))) %>%
+  tab_style(
+    style=cell_text(font = "Helvetica"), 
+    locations = cells_body(columns = everything())) %>%
+  tab_options(table.width = 1100) %>%
+  cols_width(c(Industry) ~ px(370)) %>%
+  tab_options(data_row.padding = px(10),
+              column_labels.padding = px(15)) %>%
+  gtsave("Table 1 Regional Employment by Industry Sector.png", expand = 10, vheight=600, vwidth =1400)
+
+write_csv(employment.summary, "Industry Employment Summary.csv")
+
+#### Industry Employment for City ####
+payload <- list(
+  'seriesid'=c('SMU42979610000000001', #Nonfarm Employment
+               'SMU42979611500000001', #Mining, Logging, and Construction
+               'SMU42979613000000001', #Manufacturing
+               'SMU42979614100000001', #Wholesale Trade
+               'SMU42979614200000001', #Retail Trade
+               'SMU42979614300000001', #Transportation and Utilities
+               'SMU42979615000000001', #Information
+               'SMU42979615500000001', #Finance and Insurance
+               'SMU42979616000000001', #Professional and Businees Services
+               'SMU42979616500000001', #Education and Health Services
+               'SMU42979617000000001'  #Leisure and Hospitality
+  ), 
+  'startyear'=2015,
+  'endyear'=2030, 
+  'registrationKey' = '160c8d9a0e7c40bcada565263a877b85')
+
+ces.employment <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(Industry = case_when(seriesID ==  'SMU42979610000000001' ~ "Nonfarm Employment",
+                              seriesID == 'SMU42979611500000001' ~ "Mining, Logging, and Construction",
+                              seriesID == 'SMU42979613000000001' ~ "Manufacturing",
+                              seriesID == 'SMU42979614100000001' ~ "Wholesale Trade",
+                              seriesID == 'SMU42979614200000001' ~ "Retail Trade",
+                              seriesID == 'SMU42979614300000001' ~ "Transportation and Utilities",
+                              seriesID == 'SMU42979615000000001' ~ "Information",
+                              seriesID == 'SMU42979615500000001' ~ "Finance and Insurance",
+                              seriesID == 'SMU42979616000000001' ~ "Professional and Business Services",
+                              seriesID == 'SMU42979616500000001' ~ "Education and Health Services",
+                              seriesID == 'SMU42979617000000001'  ~ "Leisure and Hospitality"),
+         Employment = as.numeric(value) * 1000) %>%
+  mutate(Month = my(paste(periodName, year, sep = " "))) 
+
+
+
+
+most.recent.employment <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month) %>%
+  dplyr::select(Industry, Month, Employment)
+
+month.change <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month, n=2) %>%
+  dplyr::select(Industry, Month, Employment) %>%
+  pivot_wider(names_from = Month, values_from = Employment) %>%
+  dplyr::ungroup() %>%
+  mutate(`Month-Over-Month Change` = .[[2]] - .[[3]]) %>%
+  dplyr::select(Industry, `Month-Over-Month Change`)
+
+year.change <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month, n=12) %>%
+  dplyr::select(Industry, Month, Employment) %>%
+  pivot_wider(names_from = Month, values_from = Employment) %>%
+  dplyr::ungroup() %>%
+  mutate(`Year-Over-Year Change` = .[[2]] - .[[13]]) %>%
+  dplyr::select(Industry, `Year-Over-Year Change`)
+
+pandemic.change <- ces.employment %>%
+  dplyr::group_by(Industry) %>%
+  dplyr::filter(Month == "2020-02-01") %>%
+  mutate(Employment.Feb2020 = Employment) %>%
+  dplyr::select(Industry, Employment.Feb2020) %>%
+  left_join(most.recent.employment) %>%
+  mutate(`Change Since February 2020` = Employment - Employment.Feb2020) %>%
+  dplyr::select(Industry, `Change Since February 2020`)
+
+employment.summary <- most.recent.employment %>%
+  left_join(month.change) %>%
+  left_join(year.change) %>%
+  left_join(pandemic.change) %>%
+  distinct() %>%
+  dplyr::select(!(Month))
+
+rm(most.recent.employment, month.change, year.change, pandemic.change, payload)
+
+employment.summary %>%
+  filter(Industry != "Nonfarm Employment") %>%
+  arrange(desc(Employment)) %>%
+  ungroup() %>%
+  gt() %>%
+  cols_align(align = "center", columns = c(Employment, `Month-Over-Month Change`, `Year-Over-Year Change`, 
+                                           `Change Since February 2020`))%>%
+  cols_align(align = "left", columns = Industry) %>%
+  fmt_number(sep_mark = ",", decimals = 0,
+             columns = c(Employment, `Month-Over-Month Change`, `Year-Over-Year Change`, 
+                         `Change Since February 2020`)) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#007abd"),
+      cell_text(weight = "bold", color="white", font = "Helvetica")),
+    locations = list(cells_column_labels(columns = everything()))) %>%
+  tab_style(
+    style=cell_text(font = "Helvetica"), 
+    locations = cells_body(columns = everything())) %>%
+  tab_options(table.width = 1100) %>%
+  cols_width(c(Industry) ~ px(370)) %>%
+  tab_options(data_row.padding = px(10),
+              column_labels.padding = px(15)) %>%
+  gtsave("Table 1 City Employment by Industry Sector.png", expand = 10, vheight=600, vwidth =1400)
+
+write_csv(employment.summary, "Industry Employment Summary.csv")
+
+#### Wage Index ####
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+
+
+payload <- list('seriesid' = c('CIU20200000000LJA',
+                                'CIU2020000000000A'), 
+                 'startyear'='2019', 
+                 'endyear' = '2030', 
+                 'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+wage.index.change <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CIU20200000000LJA', "Philadelphia", "United States"),
+         value = as.numeric(value) /100,
+         quarter = paste0(substr(period,1,1), substr(period,3,3)),
+         quarter1 = paste(year,substr(period,3,3), sep = "."),
+         quarter1 = as.numeric(quarter1),
+         year = as.numeric(year)) %>%
+  slice_max(order_by = quarter1, n = 16)
+  
+  
+
+wage.index.change %>%
+  ggplot(aes(x = quarter, y = value, fill = geography)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#007abd", "#002D46")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Figure 14 Wage Index.png",
+       height=4.3, width = 5, units = "in")
+
+
+
+#### Inflation CPI ####
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+
+
+payload <- list('seriesid' = c('CUUR0000SA0',
+                               'CUURS12BSA0'), 
+                'startyear'='2015', 
+                'endyear' = '2030', 
+                'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+cpi.inflation <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUURS12BSA0', "Philadelphia", "United States")) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
   na.omit() %>%
-  group_by(year, gent.flag) %>%
-  summarize_at(c("bach.share", "home.valueE", "hhincE"),mean )
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:5, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
 
 
 
+cpi.inflation %>%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+ scale_fill_manual(values = c("#007abd", "#002D46")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Figure 15 Inflation.png",
+       height=4, width = 8, units = "in")
 
 
-msa.i<- map_dfr(years, ~{get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
-                                 year = .x,
-                                 
-                                 variables = c(hhinc = "B19013_001",
-                                               bach = "B23006_023",
-                                               edu.total = "B23006_001"),
-                                 output = "wide")%>%
-                                 filter(GEOID == "37980")
-                        }, .id = "year") %>%
-          mutate("bach.share" = bachE / edu.totalE,
-         "year" = 2009 + as.numeric(year))
+
+#### Removing Unnecessary Data ####
+rm(ces.employment, employment.summary, feb2020.emp, feb2020.lf, LAUS, LAUS_long, LAUS.comp.recovery, 
+   LAUS.pa, LAUS.phl, LAUS.us, LAUS2, payload, payload2, wage.index.change)
+
+#### Pulling Data State CES Wages, YoY by industry####
+payload <- list(
+  'seriesid'=c('SMU42000000500000003', #Private Employment
+               'SMU42000002000000003', #Mining, Logging, and Construction
+               'SMU42000003000000003', #Manufacturing
+               'SMU42000004000000003', #Trade and Transportation
+               'SMU42000005000000003', #Information
+               'SMU42000005500000003', #Finance and Insurance
+               'SMU42000006000000003', #Professional and Business Services
+               'SMU42000006500000003', #Education and Health Services
+               'SMU42000007000000003'  #Leisure and Hospitality
+  ), 
+  'startyear'=2015,
+  'endyear'=2030, 
+  'registrationKey' = '160c8d9a0e7c40bcada565263a877b85')
+
+ces.wages <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(Industry = case_when(seriesID == 'SMU42000000500000003' ~ "Private Employment",
+                              seriesID == 'SMU42000002000000003' ~ "Mining, Logging, and Construction",
+                              seriesID == 'SMU42000003000000003' ~ "Manufacturing",
+                              seriesID == 'SMU42000004000000003' ~ "Trade and Transportation",
+                              seriesID == 'SMU42000005000000003' ~ "Information",
+                              seriesID == 'SMU42000005500000003' ~ "Finance and Insurance",
+                              seriesID == 'SMU42000006000000003' ~ "Professional and Business Services",
+                              seriesID == 'SMU42000006500000003' ~ "Education and Health Services",
+                              seriesID == 'SMU42000007000000003' ~ "Leisure and Hospitality")) %>%
+  mutate(Month = my(paste(periodName, year, sep = " "))) %>%
+  rename("Wage" = "value") %>%
+  filter(Month != "2023-01-01")
 
 
-
-yearly.change <- full_join(msa.i, tracts.i.sum, by = "year") %>%
-  filter(gent.flag == 1) 
-```
-After selecting these gentrified buffers, we calculate the yearly changes in median income and education levels for all gentrified tracts and compare it to the MSA level changes in these measures:
-
-
-```{R plots, echo = F, message = FALSE, outwidth = "50%"}
-
-  income.p <- ggplot(yearly.change, aes(x=year))+ 
-  geom_line(aes( y = hhincE.x, col = "MSA level")) +
-  geom_line(aes( y = hhincE.y, col = "Gentrified Tracts")) + xlab("Year") + ylab("Median Household Income")
-ggsave("C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\Tables\\incomechanges.png")
-
-    ggplot(yearly.change, aes(x=year))+ 
-  geom_line(aes( y = bach.share.x, col = "MSA level")) +
-  geom_line(aes( y = bach.share.y, col = "Gentrified Tracts")) + xlab("Year") + ylab("Share of Population w/ College Degree")
-    ggsave("C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\Tables\\educationchanges.png")
-    
-    
-  write.csv(yearly.change, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\yearlychange.csv")
-
-```
-We see rapid increases in share of population with a bachelor's degree that quickly outpaces the MSA, and a growing median income in gentrified tracts that appear it will soon overtake the MSA level.
+year.change.wages <- ces.wages %>%
+  mutate(Wage = as.numeric(Wage))%>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month, n=12) %>%
+  select(Industry, Month, Wage) %>%
+  pivot_wider(names_from = Month, values_from = Wage) %>%
+  dplyr::ungroup() %>%
+  mutate(`Year-Over-Year % Change` = (.[[2]] - .[[13]])/.[[13]],
+         `Year-Over-Year Change` = (.[[2]] - .[[13]])) %>%
+  select(Industry, `Year-Over-Year % Change`, `Year-Over-Year Change`, 2) %>%
+  mutate(`Most Recent Average` = .[[4]]) %>% select(!4)
 
 
-Demographics of gentrified areas:
+last.month.wage.growth <- ces.wages %>%
+  filter(Month != "2022-12-01") %>%
+  mutate(Wage = as.numeric(Wage))%>%
+  dplyr::group_by(Industry) %>%
+  slice_max(Month, n=12) %>%
+  select(Industry, Month, Wage) %>%
+  pivot_wider(names_from = Month, values_from = Wage) %>%
+  dplyr::ungroup() %>%
+  mutate(`Nov Year-Over-Year % Change` = (.[[2]] - .[[13]])/.[[13]],
+         `Nov Year-Over-Year Change` = (.[[2]] - .[[13]])) %>%
+  select(Industry, `Nov Year-Over-Year % Change`, `Nov Year-Over-Year Change`, 2) %>%
+  mutate(`Most Recent Average` = .[[4]]) %>% select(!4)
 
-```{R demographics, echo = F, result= 'hide', messages= F}
+wage.basispoint <- last.month.wage.growth %>%
+  left_join(year.change.wages, by = c("Industry")) %>%
+  mutate(growth.perc.change = 100 * (`Year-Over-Year % Change` - `Nov Year-Over-Year % Change`),
+         avg.change = (`Most Recent Average.y` - `Most Recent Average.x`))
 
-demo.years <- c(2010,2019) 
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+year.change.wages %>% 
+  ggplot(aes(y=reorder(Industry, `Year-Over-Year % Change`), x= `Year-Over-Year % Change`))+
+  geom_col(fill = "#007abd") +
+  theme_minimal() +
+  scale_x_continuous(labels=percent_format(accuracy=1), breaks = seq(-1, 1, by = .01)) +
+  labs(x="Year-Over-Year % Change", y="Broad Industry Sector")+
+  theme(legend.position="none", legend.title=element_blank(), 
+        axis.text.x = element_text(vjust = .5, size=10, color="black"), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.text.y = element_text(vjust = .5, size=10, color="black", face = "bold"), 
+        legend.text = element_text(size=10, color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_vline(aes(xintercept = 0))
+ggsave("Figure 16 Year Over Year Wage Changes in PA.png",
+       height=4.5, width = 9, units = "in")
+write.csv(year.change.wages, "Year Change Wages Table.csv")
+#### Burning Glass Charts ###
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Inputs")
 
-demographics<- map_dfr(demo.years, ~{get_acs(geography = "tract",
-                                    year = .x,
-                                    state = "PA",
-                                    county = 101,
-                                    variables = c(pop = "B01003_001",
-                                                  black = "B01001B_001",
-                                                  families = "B17012_001",
-                                                  poor.fam = "B17012_002",
-                                                  median.age = "B07002_001"),
-                                    output = "wide")
-                             }, .id = "year")%>%
-              left_join(gent.flag, by = "GEOID") %>%
-              mutate("gent.flag" = ifelse(both.gentrification.flag == "Gentrifying", 1, 0),
-                     "year" = ifelse(year == 1, 2010, 2019)) %>% left_join(tracts, by = "GEOID") 
-
-demographics <- demographics %>%
-  left_join(tracts, by = "GEOID") %>%
-  st_as_sf()
-
-
-flag <- gent.both %>%
- st_union(.,by_feature = F) %>% st_as_sf() %>%
-  st_cast("POLYGON")%>%
-  mutate(names = names2)
-
-
-gent.demographics <- st_join(demographics, flag) %>% 
-  st_as_sf() %>%
-  filter(both.gentrification.cat == "Gentrifying")
-
-
-demographics.sum <- demographics %>%
+bg.edu.exp <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 6) %>%
+  dplyr::select(!(7:8)) %>%
   na.omit() %>%
-  group_by(year, gent.flag) %>%
-  summarize_at(c("popE", "blackE", "familiesE", "poor.famE"),sum) %>%
-  mutate("perblack" = blackE / popE,
-         "poor.hh" = poor.famE / familiesE)
+  pivot_longer(2:6) %>%
+  mutate(Education = name,
+         `Job Postings` = round(value,-1),
+         .keep = "unused")
+  
+bg.edu.exp$Experience <- dplyr::recode(bg.edu.exp$Experience,
+         `0 to 2 years of experience` = "Less than 3 Years", 
+         `3 to 5 years of experience` = "3 Years or More", 
+         `6 to 8 years of experience` = "3 Years or More",
+         `9+ years of experience` = "3 Years or More"
+  )
+
+bg.edu.exp$Education <- dplyr::recode(bg.edu.exp$Education,
+                                      `Bachelor's degree` = "Bachelor's Degree", 
+                                      `High school or vocational training` = "High School or Equivalent", 
+                                      `Master's degree` = "Master's Degree or Higher",
+                                      `Associate's degree` = "Associate's Degree",
+                                     `Doctoral degree` = "Master's Degree or Higher"
+)
+
+bg.edu.exp <- bg.edu.exp %>%
+  dplyr::group_by(Experience, Education) %>%
+  dplyr::summarize(`Job Postings` = sum(`Job Postings`))
+  
+
+bg.ind <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 8) %>%
+  slice_max(`Job Postings`, n=10) %>%
+  dplyr::select(1:3) %>%
+  mutate(`Job Postings` = round(`Job Postings`,-1),
+         Industry = str_wrap(Industry, width = 50))
+
+educ.req <- read_csv("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Inputs\\Educ_BLS.csv")
+educ.req$Education <- factor(educ.req$Education, levels = c("No formal educational credential", 
+                                                            "High school diploma or equivalent",
+                                                            "Postsecondary nondegree award",
+                                                            "Associate's degree",
+                                                            "Bachelor's degree",
+                                                            "Master's degree",
+                                                            "Doctoral or professional degree"))
+bg.occ <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 10) %>%
+  slice_max(`Job Postings`, n=10) %>%
+  dplyr::select(1:3) %>%
+  mutate(`Job Postings` = round(`Job Postings`,-1),
+         Occupation = str_wrap(Occupation, width = 50)) %>%
+  stringdist_left_join(educ.req)
+
+bg.occ.change.fast <- readxl::read_excel("Burning Glass Extract - Last Year.xlsx", sheet = 10) %>%
+  left_join(readxl::read_excel("Burning Glass Extract.xlsx", sheet = 10), 
+            by = "Occupation") %>%
+  filter(`Job Postings.x` > 100) %>%
+  mutate(change = (`Job Postings.y` - `Job Postings.x`)/`Job Postings.y`) %>%
+  dplyr::select(Occupation, `Job Postings.x`, `Job Postings.y`, change) %>%
+  slice_max(order_by = change, n = 10)
 
 
-demographics.median.age <- demographics %>%
+bg.occ.change.dec.fast <- readxl::read_excel("Burning Glass Extract - Last Year.xlsx", sheet = 10) %>%
+  left_join(readxl::read_excel("Burning Glass Extract.xlsx", sheet = 10), 
+            by = "Occupation") %>%
+  filter(`Job Postings.x` > 100) %>%
+  mutate(change = (`Job Postings.y` - `Job Postings.x`)/`Job Postings.y`) %>%
+  dplyr::select(Occupation,`Job Postings.x`,`Job Postings.y`, change) %>%
+  slice_max(order_by = -change, n = 10)
+
+
+bg.occ.change.strong <- readxl::read_excel("Burning Glass Extract - Last Year.xlsx", sheet = 10) %>%
+  left_join(readxl::read_excel("Burning Glass Extract.xlsx", sheet = 10), 
+            by = "Occupation") %>%
+  mutate(change = `Job Postings.y` - `Job Postings.x`) %>%
+  dplyr::select(Occupation, change) %>%
+  slice_max(order_by = change, n = 10)
+
+bg.occ.change.weak <- readxl::read_excel("Burning Glass Extract - Last Year.xlsx", sheet = 10) %>%
+  left_join(readxl::read_excel("Burning Glass Extract.xlsx", sheet = 10), 
+            by = "Occupation") %>%
+  mutate(change = `Job Postings.y` - `Job Postings.x`) %>%
+  dplyr::select(Occupation, change) %>%
+  slice_max(order_by = -change, n = 10)
+
+bg.skill.level <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 10) %>%
+  dplyr::select(1:3) %>%
+  mutate(`Job Postings` = round(`Job Postings`,-1),
+         Occupation = str_wrap(Occupation, width = 50)) %>%
+  stringdist_left_join(educ.req) %>% select(3,6) %>%
+  dplyr::group_by(Skill) %>%
+  dplyr::summarize(total = sum(`Job Postings`))
+
+bg.time <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 18) %>%
+  dplyr::select(1:2) %>%
+  mutate(`Job Postings` = round(`Total postings`,-1), .keep = "unused") %>%
+  mutate(Period = parse_date_time(Period, orders = "my"),
+         Year = year(Period),
+         Month = month(Period, abbr = T, label = T)) %>%
+  slice_max(Period, n = 18) %>%
+  mutate(recent = rank(Period) %in% 16:18)
+
+bg.time2 <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 18) %>%
+  dplyr::select(1:2) %>%
+  mutate(`Job Postings` = round(`Total postings`,-1), .keep = "unused") %>%
+  mutate(Period = parse_date_time(Period, orders = "my")) %>%
+  slice_max(Period, n = 24) %>%
+  mutate(recent = rank(Period) %in% 19:21)
+
+bg.employers <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 4) %>%
+  dplyr::select(1:2) %>%
+  slice_max(`Job Postings`, n = 20) 
+
+bg.certificate <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 2) %>%
+  dplyr::select(1:2) %>%
+  slice_max(`Job Postings`, n = 15) 
+
+bg.skills <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 12) %>%
+  dplyr::select(1:5)
+bg.software <- readxl::read_excel("Burning Glass Extract.xlsx", sheet = 16) %>%
+  dplyr::select(1:5)
+bg.skills <- bg.skills %>%
+  rbind(bg.software) %>% slice_max(`Skill Postings`, n = 7) %>%
+  dplyr::select(1)
+
+bg.postings <- bg.time %>%
+  subset(recent == TRUE) %>%
+  mutate(`Total Postings this Quarter` = sum(`Job Postings`)) %>%
+  dplyr::select(`Total Postings this Quarter`) %>%
+  head(n=1)
+
+bg.previous <- bg.time2 %>%
+  subset(recent == TRUE) %>%
+  mutate(`Total Postings last Quarter` = sum(`Job Postings`)) %>%
+  dplyr::select(`Total Postings last Quarter`) %>%
+  head(n=1) %>%
+  mutate(`Total Postings this Quarter` = bg.postings$`Total Postings this Quarter`) %>%
+  mutate(Change = `Total Postings this Quarter` - `Total Postings last Quarter`)
+  
+
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+
+write.csv(bg.occ.change.fast, "fastest_growing_occupations.csv")
+write.csv(bg.occ.change.dec.fast, "fastest_shrinking_occupations.csv")
+
+bg.time %>%
+  ggplot(aes(x = Month, y = `Job Postings`, fill = recent)) +
+  geom_col() +
+  theme_minimal() +
+  scale_fill_manual(values = c("#E7E6E6", "#007abd")) +
+  scale_y_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6))+
+  labs(x=NULL,y="Monthly Job Postings")+
+  theme( 
+    axis.text.x = element_text(size=11, color="black", angle = 90, margin = margin(t=-5)), 
+    strip.placement = "outside",
+    strip.text = element_text(face="bold", size = 11, color="black"),
+    axis.title.y = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "none",
+    panel.grid = element_blank()) +
+  geom_hline(aes(yintercept = 0)) +
+  facet_grid(~Year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Figure 12 BG Time.png",
+       height=4, width = 8, units = "in")
+
+bg.occ %>%
+  rename("Occupation" = Occupation.x) %>%
+  ggplot(aes(x = `Job Postings`, y = reorder(Occupation, `Job Postings`), 
+             fill = Education, 
+             label = comma(`Job Postings`, accuracy = 1))) +
+  geom_bar(stat="identity", width=.8) +
+  scale_fill_manual(values = c("#a39d93", "#172151", "#005a8d", "#007abd")) +
+  scale_x_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6)) +
+  theme_minimal() +
+  labs(x=NULL,y=NULL)+
+  theme(legend.position=c(.75,.15), legend.title=element_text(size=12, color="black", face="bold", margin = margin(b=3)), 
+        axis.text.x = element_blank(), 
+        legend.title.align = .9,
+        legend.key.size = unit(.7,"cm"),
+        axis.text.y = element_text(size=10, color="black", margin = margin(r =-5)),
+        legend.text = element_text(size=10, color="black"),
+        panel.grid = element_blank()) +
+  geom_text(position = position_dodge(0.9),
+            hjust = 1.1, fontface="bold", color="white") +
+  guides(fill = guide_legend(title = "Typical Entry Level Education  ",
+                             label.position = "right")) +
+  geom_vline(aes(xintercept = 0))
+ggsave("Figure 13 BG Occupations.png",
+       height=4, width = 8, units = "in")
+
+bg.ind %>%
+  ggplot(aes(x = `Job Postings`, y = reorder(Industry, `Job Postings`), 
+             label = comma(`Job Postings`))) +
+  geom_col(fill = "#007abd") +
+  scale_x_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6))+
+  theme_minimal() +
+  labs(x=NULL,y=NULL)+
+  theme(legend.position="bottom", legend.title=element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.title.x = element_text(face="bold", margin = margin(t = 20, r = 0, b = 0, l = 0), size = 11, color="black"),
+        axis.text.y = element_text(size=11, color="black", face = "bold", margin=margin(r=-10)),
+        legend.text = element_text(size=11, color="black", face="bold"),
+        panel.grid = element_blank()) +
+  geom_text(position = position_dodge(0.9),
+            hjust = 1.1, fontface="bold", color="white") +
+  guides(labels=guide_legend(reverse=T)) +
+  guides(fill = guide_legend(reverse = T)) +
+  geom_vline(aes(xintercept = 0))
+
+
+bg.edu.exp %>%
+  ggplot(aes(y=reorder(Education, -`Job Postings`), x= `Job Postings`, fill = Experience, 
+             label = ifelse(`Job Postings`>=1500, comma(`Job Postings`), ""))) +
+  geom_col(color="white", width=.75) +
+  scale_x_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6))+
+  scale_fill_manual(values = c("#e5b11b", "#007abd")) +
+  theme_minimal() +
+  labs(x=NULL,y=NULL)+
+  theme(legend.position="bottom", legend.title=element_text(size=12, color="black", face="bold", margin = margin(b=3)),
+        axis.text.x = element_blank(), 
+        axis.title.x = element_text(face="bold", margin = margin(t = 20, r = 0, b = 0, l = 0), size = 11, color="black"),
+        axis.text.y = element_text(size=11, color="black", face = "bold"),
+        legend.text = element_text(size=11, color="black", face="bold"),
+        panel.grid = element_blank()) +
+  geom_text(position = position_stack(vjust=.5), fontface="bold", color="white", size=5.5) +
+  guides(labels=guide_legend(reverse=T)) +
+  guides(fill = guide_legend(reverse = T)) +
+  geom_vline(aes(xintercept = 0)) +
+  guides(fill = guide_legend(title = "Required Experience: ")) 
+
+
+
+rm(bg.edu.exp,
+   bg.ind,
+   bg.occ,
+   bg.software,
+   bg.time,
+   bg.time2,
+   educ.req
+   )
+
+
+#### Occupations ####
+#install.packages("openxlsx")
+library(openxlsx)
+library(gt)
+
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Inputs")
+occs <- openxlsx::read.xlsx ("EMSI Occupations.xlsx", sheet = 3, sep.names = " ") %>%
+  mutate(`Median Hourly Earnings` = as.numeric(`Median Hourly Earnings`)) %>%
+  na.omit(`Median Hourly Earnings`)
+  
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+
+occs %>%
+  mutate(Employment = round(as.numeric(.[[4]]), -2),
+         Annual.Emp.Change = round(as.numeric(.[[5]]), -1),
+         Occupation = Description, 
+         Wage = paste0("$", format(round(`Median Hourly Earnings`,2),nsmall=2))) %>%
+  slice_max(Employment, n=25) %>%
+  dplyr::select(Occupation, Employment, Annual.Emp.Change, Wage) %>%
+  rename("Occupation" = Occupation,
+         "Total Employment" = Employment,
+         "Employment Change" = Annual.Emp.Change,
+         "Median Wage" = Wage) %>%
+  gt() %>%
+  fmt_number(columns = c(`Total Employment`), decimals = 0) %>%
+  cols_align(align = "center", columns = c(`Median Wage`,`Employment Change`, `Total Employment`)) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#007abd"),
+      cell_text(weight = "bold", color="white", font = "Arial")
+    ),
+    locations = cells_column_labels(columns = c(Occupation, 
+                                                   `Median Wage`,`Employment Change`, `Total Employment`)))%>%
+  tab_style(
+    style=cell_text(font = "Arial"), 
+    locations = cells_body(columns = c(Occupation, `Median Wage`,`Employment Change`, `Total Employment`))) %>%
+  cols_width(c(`Occupation`) ~ px(450)) %>%
+    tab_options(
+      column_labels.padding = 10,
+      table.width = 1000
+    ) %>%
+  gtsave("Appendix Table 5 Largest Occupations.png", expand = 10, vwidth=1200)
+
+
+
+
+occs %>% 
+  mutate(change = as.integer(.[[5]])) %>%
+  select(c(`Typical Entry Level Education`, change)) %>%
+  mutate(`Typical Entry Level Education` =  factor(`Typical Entry Level Education`, 
+                                                   levels = c("No formal educational credential", 
+                                        "High school diploma or equivalent",
+                                        "Postsecondary nondegree award",
+                                        "Associate's degree",
+                                        "Bachelor's degree",
+                                        "Master's degree",
+                                        "Doctoral or professional degree"))) %>%
   na.omit() %>%
-  group_by(year, gent.flag) %>%
-  summarize_at(c("median.ageE"), median)
-
-
-write.csv(gent.tracts.demographics.sum, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_demographics_sum.csv")
-
-msa.demographics <- map_dfr(demo.years, ~{get_acs(geography = "metropolitan statistical area/micropolitan statistical area",
-                                    year = .x,
-                                    variables = c(pop = "B01003_001",
-                                                  black = "B01001B_001",
-                                                  families = "B17012_001",
-                                                  poor.fam = "B17012_002",
-                                                  median.age = "B07002_001"),
-                                    output = "wide") %>%
-       filter(GEOID == "37980")
-                             }, .id = "year")%>%
-              mutate("per.black" = blackE / popE,
-                     "poor.fam" = poor.famE / familiesE,
-                     "year" = ifelse(as.numeric(year) == 1, 2010, 2019))
-
-write.csv(msa.demographics, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\msa_demographics.csv")
-```
-<b> LODES Employment Data </b>
-
-After selecting our gentrified buffers, we bring in block level LODES data to assign to each buffer. We aggregate the block level data to buffer level, and remove industries that have exceptionally low (less than 50) employment numbers for the entire buffer.
-
-
-
-Looking at general LODES totals for the whole MSA
-
-Our first step is to analyze the difference in jobs by income level for all gentrified tracts compared to Philadelphia. We first calculate the share of each income bin for all of Philadelphia, and see how this share changed over the analysis period. The bins are categorized as follows:
-* 1) Extremely Poor: wage less than \$1,250 a month (\$15,000 annual gross salary)
-* 2) Poor: wage between \$1,250 and \$3,333 a month  (\$15,000 to \$39,996 annual gross salary)
-* 3) Standard: wage between \$3,333 and above a month (\$39,996 and above annual gross salary)
-
-These bins are not too specific, as the standard bin is very broad.
-
-```{R WAC income, echo = F, message = FALSE, results = 'hide'}
-income.2010 <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2010.csv.gz") %>%
-  mutate(w_geocode = as.character(w_geocode)) %>%
-  filter(startsWith(w_geocode, "42101")) %>%
-  select(1,6:8) %>%
-  pivot_longer(2:4, names_to = "income", values_to = "wac.income.2010")
-
-
-wac.income<- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2019.csv.gz") %>% 
-  mutate(w_geocode = as.character(w_geocode)) %>%
-  filter(startsWith(w_geocode, "42101")) %>%
-  select(1,6:8) %>%
-  pivot_longer(2:4, names_to = "income", values_to = "wac.income.2019") %>%
-  inner_join(income.2010) %>%
-  mutate(income = recode(income,
-                           "CE01" = "Extremely Poor (Less than $1250 / month)",
-                           "CE02" = "Poor ($1250 - $3333 / month)",
-                           "CE03" = "Standard (More than $3333 / month)")) %>%
-  inner_join(blocks, by = c("w_geocode" = "GEOID10")) %>%
-  st_as_sf() %>%
-  select(1:4)
-
-wac.income.totals <- wac.income %>%
-  st_drop_geometry() %>%
-  group_by(income) %>%
-  summarize_if(is.numeric,sum) %>%
-  mutate(share.10 = round( 100 * wac.income.2010 / sum(wac.income.2010), 3),
-         share.19 = round( 100 * wac.income.2019 / sum(wac.income.2019), 3),
-         change = round(share.19 - share.10, 3))
-
-rm(income.2010)
-```
-
-```{R change wages, echo = F}
-library(DT)
-
-wac.income.totals <- wac.income.totals %>%
-  select(income, wac.income.2010, wac.income.2019, share.10, share.19, change)
-
-wac.income.totals.dt <- DT::datatable(wac.income.totals,
-         #extensions = c('FixedColumns',"FixedHeader"),
-          options = list(scrollX = TRUE, 
-                         scrollY = TRUE,
-                         paging=TRUE,
-                         fixedHeader=FALSE,
-                         rowWidth='10%'),
-         colnames=c("Income", "Job Count 2010", "Job Count 2019", "Share of All Jobs 2010",
-                    "Share of All Jobs 2019", "Change in Share of All Jobs"),
-         caption ="Income Distribution, All of Philly")
-
-
-write.csv(wac.income.totals, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\wac_income.csv")
-#saveWidget(wac.income.totals.dt, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\Tables\\wac.income.totals.html")
-#webshot(wac.income.totals.html, "wac.table.png")
-
-```
-
-We see that for all of Philadelphia, the Standard bin is growing in share mostly due to a strong decrease in the Poor bin. Notably, the Poor bin decreased greater than the Very Poor bin. This suggests that income gains are happening largely in those making the Poor wages, with less growth and mobility in the Very Poor.
-
-We repeat the same analysis for the gentrified areas:
-
-```{R income for gentrified areas, echo = F, message = FALSE}
-
-gent.income.totals <- st_intersection(both.buff, wac.income)
-
-gent.income.totals <- gent.income.totals%>%
-  group_by(income) %>%
-  summarize_if(is.numeric, sum) %>%
-  mutate(share.10 = round( 100 * wac.income.2010 / sum(wac.income.2010), 3),
-         share.19 = round( 100 * wac.income.2019 / sum(wac.income.2019), 3),
-         city.diff.10 = round(share.10 - wac.income.totals$share.10, 3),
-         city.diff.19 = round(share.19 - wac.income.totals$share.19, 3),
-         change = round(share.19 - share.10, 3))
-
-gent.income.totals <- gent.income.totals %>%
-  select(!c(x)) %>%
-  st_drop_geometry()
-
-write.csv(gent.income.totals, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\wac_income_gent.csv")
-
-DT::datatable(gent.income.totals,
-         #extensions = c('FixedColumns',"FixedHeader"),
-          options = list(scrollX = TRUE, 
-                         scrollY = TRUE,
-                         paging=TRUE,
-                         fixedHeader=FALSE,
-                         rowWidth='10%'),
-         colnames=c("Income", "Job Count 2010", "Job Count 2019", "Share of All Jobs 2010",
-                    "Share of All Jobs 2019", "Change in Share of All Jobs"),
-         caption ="Income Distribution in Gentrified Areas")
-
-```
-
-We see that compared to all of Philadelphia, gentrified tracts had a much higher percent of jobs in the "Poor" category, 38% in 2010, but this bin decreased by the same rate as in all of Philly. Gentrified also tracts had a lower decrease in percent of Extremely Poor compared to all of Philadelphia, and a lower growth in Standard wages.
-
-We see that gentrified tracts had more Poor and Very Poor jobs compared to all of Philadelphia both at the start and end of the gentrification period, however the changes in these two categories were comprable if not smaller than the changes for all of Philadelphia.In fact, while the direction of the changes was the same as in all of Philadelphia, the magnitudes for all three categories were smaller. While the dynamics of the intial period match our assumptions about gentrification, we would have expected to see larger increases in the Standard wage jobs and rapid decline in the Poor and Very Poor jobs. We can't for certain rule this out, however, due to the lack of specificty noted above in regards to the bin levels for wages.
-
-```{R LODES Work Area, echo = F, results = 'hide', message = FALSE}
-#nhoods <- sf::read_sf("C:\\Users\\sffra\\Downloads\\PhillyPlanning_Neighborhoods\\PhillyPlanning_Neighborhoods.shp"
- 
-lodes.2010 <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2010.csv.gz") %>% 
-  mutate(w_geocode = as.character(w_geocode)) %>%
-  filter(startsWith(w_geocode, "42101")) %>%
-  select(1,9:28) %>%
-  pivot_longer(2:21, names_to = "industry", values_to = "employment.2010")
-
-
-lodes.wac <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/wac/pa_wac_S000_JT01_2019.csv.gz") %>% 
-  mutate(w_geocode = as.character(w_geocode)) %>%
-  filter(startsWith(w_geocode, "42101")) %>%
-  select(1,9:28) %>%
-  pivot_longer(2:21, names_to = "industry", values_to = "employment.2019") %>%
-  inner_join(lodes.2010) %>%
-  mutate(industry = recode(industry, 
-"CNS01"= "Agriculture, Forestry, Fishing and Hunting",
-"CNS02"="Mining, Quarrying, and Oil and Gas Extraction",
-"CNS03"= "Utilities",
-"CNS04"="Construction",
-"CNS05"= "Manufacturing",
-"CNS06"= "Wholesale Trade",
-"CNS07"= "Retail Trade",
-"CNS08"= "Transportation and Warehousing",
-"CNS09"= "Information",
-"CNS10"= "Finance and Insurance",
-"CNS11"= "Real Estate and Rental and Leasing",
-"CNS12"= "Professional, Scientific, and Technical Services",
-"CNS13"= "Management of Companies and Enterprises",
-"CNS14"= "Administrative Support and Waste Remediation",
-"CNS15"= "Educational Services",
-"CNS16"= "Health Care and Social Assistance",
-"CNS17"= "Arts, Entertainment, and Recreation",
-"CNS18"= "Accommodation and Food Services",
-"CNS19"= "Other Services (except Public Administration)")) %>%
-  filter(industry != "CNS20") %>% 
-  mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
-                           industry == "Educational Services" | 
-                           industry == "Finance and Insurance"|
-                           industry == "Health Care and Social Assistance"| 
-                           industry == "Information" |
-                           industry == "Management of Companies and Enterprises" | 
-                           industry == "Professional, Scientific, and Technical Services" |
-                           industry == "Real Estate and Rental and Leasing", 
-                           "Professional", 
-                            ifelse(industry == "Accommodation and Food Services" |
-                                   industry == "Arts, Entertainment, and Recreation" |
-                                   industry == "Other Services (except Public Administration)" |
-                                   industry == "Retail Trade", 
-                                   "Services", 
-                                     ifelse(industry == "Construction" | 
-                                            industry == "Manufacturing" |
-                                            industry == "Transportation and Warehousing" |
-                                            industry == "Utilities" |
-                                            industry == "Wholesale Trade", "Production", "n/a")))) %>%
-  filter(Sector != "n/a") %>%
-  inner_join(blocks, by = c("w_geocode" = "GEOID10")) %>%
-  st_as_sf() %>%
-  select(1:5)
-
-#write.csv(lodes.wac, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\lodes_wac.csv")
-
-
-msa.wac.sectors <- lodes.wac %>% 
-  st_drop_geometry() %>%
-  filter(industry != "Mining, Quarrying, and Oil and Gas Extraction",
-         industry != "Agriculture, Forestry, Fishing and Hunting") %>%
-  group_by(Sector) %>%
-  summarize_if(is.numeric, sum) %>%
-  mutate("Share10" = employment.2010 / sum(employment.2010),
-         "Share19" = employment.2019 / sum(employment.2019),
-         "ChangeShare" = Share19 - Share10,
-         "ChangeJobs" = employment.2019 - employment.2010)
-
-#st_write(msa.wac.sectors, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\msa.wac.sectors.csv")
-
-
-lodes.gentrification.wac <- st_intersection(lodes.wac, both.buff) 
-
-lodes.gentrification.wac.csv <- lodes.gentrification.wac %>% 
-  st_drop_geometry() %>%
-  group_by(names, Sector, industry) %>%
-  summarize_if(is.numeric, sum)
-
- # write.csv(lodes.gentrification.wac.csv, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_wac.csv" )
-
-
-
-
-
-#st_write(gent.wac.sectors, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\wac_buffer\\wac_buffer.shp")
-```
-
-```{R lodes RAC, echo = F, results = 'hide', message = FALSE}
-lodes.2010 <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/rac/pa_rac_S000_JT01_2010.csv.gz") %>% 
-  mutate(h_geocode = as.character(h_geocode)) %>%
-  filter(startsWith(h_geocode, "42101")) %>%
-  select(1,9:28) %>%
-  pivot_longer(2:21, names_to = "industry", values_to = "employment.2010")
-
-
-lodes.rac <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/pa/rac/pa_rac_S000_JT01_2019.csv.gz") %>% 
-  mutate(h_geocode = as.character(h_geocode)) %>%
-  filter(startsWith(h_geocode, "42101")) %>%
-  select(1,9:28) %>%
-  pivot_longer(2:21, names_to = "industry", values_to = "employment.2019") %>%
-  inner_join(lodes.2010) %>%
-  mutate(industry = recode(industry, 
-"CNS01"= "Agriculture, Forestry, Fishing and Hunting",
-"CNS02"="Mining, Quarrying, and Oil and Gas Extraction",
-"CNS03"= "Utilities",
-"CNS04"="Construction",
-"CNS05"= "Manufacturing",
-"CNS06"= "Wholesale Trade",
-"CNS07"= "Retail Trade",
-"CNS08"= "Transportation and Warehousing",
-"CNS09"= "Information",
-"CNS10"= "Finance and Insurance",
-"CNS11"= "Real Estate and Rental and Leasing",
-"CNS12"= "Professional, Scientific, and Technical Services",
-"CNS13"= "Management of Companies and Enterprises",
-"CNS14"= "Administrative Support and Waste Remediation",
-"CNS15"= "Educational Services",
-"CNS16"= "Health Care and Social Assistance",
-"CNS17"= "Arts, Entertainment, and Recreation",
-"CNS18"= "Accommodation and Food Services",
-"CNS19"= "Other Services (except Public Administration)")) %>%
-  filter(industry != "CNS20") %>%
-  mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
-                           industry == "Educational Services" | 
-                           industry == "Finance and Insurance"|
-                           industry == "Health Care and Social Assistance"| 
-                           industry == "Information" |
-                           industry == "Management of Companies and Enterprises" | 
-                           industry == "Professional, Scientific, and Technical Services" |
-                           industry == "Real Estate and Rental and Leasing", 
-                           "Professional", 
-                            ifelse(industry == "Accommodation and Food Services" |
-                                   industry == "Arts, Entertainment, and Recreation" |
-                                   industry == "Other Services (except Public Administration)" |
-                                   industry == "Retail Trade", 
-                                   "Services", 
-                                     ifelse(industry == "Construction" | 
-                                            industry == "Manufacturing" |
-                                            industry == "Transportation and Warehousing" |
-                                            industry == "Utilities" |
-                                            industry == "Wholesale Trade", "Production", "n/a")))) %>%
-  filter(Sector != "n/a") %>%#removing public administration
-  inner_join(blocks, by = c("h_geocode" = "GEOID10")) %>%
-  st_as_sf() %>%
-  select(1:5)
-
-rm(lodes.2010)
-
-lodes.gentrification.rac <- st_intersection(lodes.rac, both.buff)
-
-lodes.gentrification.rac.csv <- lodes.gentrification.rac %>% 
-  st_drop_geometry() %>%
-  group_by(names, Sector, industry) %>%
-  summarize_if(is.numeric, sum)
-
-  write.csv(lodes.gentrification.rac.csv, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_rac.csv" )
-
-```
-
-
-```{R finding ratios, echo = F, results = 'hide', message = FALSE}
-rac.buffer <- lodes.gentrification.rac %>%
-  group_by(names, industry) %>%
-  summarize_if(is.numeric,sum) %>%
-  mutate("id" = paste0(industry, names))
-
-wac.buffer <- lodes.gentrification.wac %>%
-  group_by(names, industry) %>%
-  summarize_if(is.numeric,sum) %>%
-  mutate("id" = paste0(industry, names))
-
-
-rac.buffer.df <- rac.buffer %>% st_drop_geometry()
-wac.buffer.df <- wac.buffer %>% st_drop_geometry()
-
-rac.wac.ratio <- left_join(rac.buffer.df, wac.buffer.df, by = "id") %>%
-  select(id, "names" = names.x, "industry" = industry.x, "rac.10" = employment.2010.x,
-         "rac.19" = employment.2019.x, "wac.10" = employment.2010.y,
-         "wac.19" = employment.2019.y) %>%
-  mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
-                           industry == "Educational Services" | 
-                           industry == "Finance and Insurance"|
-                           industry == "Health Care and Social Assistance"| 
-                           industry == "Information" |
-                           industry == "Management of Companies and Enterprises" | 
-                           industry == "Professional, Scientific, and Technical Services" |
-                           industry == "Real Estate and Rental and Leasing", 
-                           "Professional", 
-                            ifelse(industry == "Accommodation and Food Services" |
-                                   industry == "Arts, Entertainment, and Recreation" |
-                                   industry == "Other Services (except Public Administration)" |
-                                   industry == "Retail Trade", 
-                                 "Services", 
-                                     ifelse(industry == "Construction" | 
-                                            industry == "Manufacturing" |
-                                            industry == "Transportation and Warehousing" |
-                                            industry == "Utilities" |
-                                            industry == "Wholesale Trade", "Production", "n/a")))) %>%
-  filter(Sector != "n/a")
-
-rac.wac.ratio <- rac.wac.ratio %>%
-  group_by(names, Sector) %>%
-  summarize_if(is.numeric, sum) %>%
-  mutate("ratio.10" = rac.10 / wac.10,
-         "ratio.19" = rac.19 / wac.19,
-         "ratio.change" = ratio.19 - ratio.10) %>%
-  left_join(both.buff, by = "names") %>%
-  st_as_sf()
-
-
-rac.wac.sectors.wide.csv <- rac.wac.sectors.wide %>%
-  st_drop_geometry()
-
-write.csv(rac.wac.sectors, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\racwacsectors.csv")
-st_write(rac.wac.sectors.wide, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\racwac_sectorbuffers\\sectorsbuff.shp")
-write.csv(rac.wac.sectors.wide.csv, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\racwacsectors_wide.csv")
-```
-Joining RAC/WAC
-```{R}
-
-flag <-tracts_flag %>%
-  select(GEOID, names) %>%
-  st_drop_geometry()
-
-buffer <- both.buff %>%
-  mutate("Production" = 0, "Professional" = 0, "Service" = 0) %>%
-  pivot_longer(cols = c("Production", "Professional", "Service"), names_to = "Sector") %>%
-  select(!c(value))
-
-st_write(buffer, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\gent_tracts\\buffer.shp")
-
-lodes.rac.tracts <- lodes.rac %>%
-  st_drop_geometry() %>%
-  mutate("GEOID" = substr(h_geocode, 0, 11),
-         "id" = paste0(GEOID, industry)) %>%
-  group_by(GEOID, Sector, industry, id) %>%
-  summarize_if(is.numeric, sum) %>%
-    select(GEOID, id, "rac.10" = employment.2010, "rac.19" = employment.2019)
-
-lodes.wac.tracts <- lodes.wac %>%
-  st_drop_geometry() %>%
-  mutate("GEOID" = substr(w_geocode, 0, 11),
-         "id" = paste0(GEOID, industry),
-         ) %>%
-  group_by(GEOID, Sector, industry, id) %>%
-  summarize_if(is.numeric, sum) %>%
-    select(GEOID, id, "wac.10" = employment.2010, "wac.19" = employment.2019)
-
-
-lodes.tracts <- left_join(lodes.rac.tracts, lodes.wac.tracts, by = "id") %>%
-  select("Sector" = Sector.x, "industry" = industry.x, "GEOID" = GEOID.x, rac.10, rac.19, wac.10, wac.19) %>%
-    mutate("Sector" = ifelse(industry == "Administrative Support and Waste Remediation" |
-                           industry == "Educational Services" | 
-                           industry == "Finance and Insurance"|
-                           industry == "Health Care and Social Assistance"| 
-                           industry == "Information" |
-                           industry == "Management of Companies and Enterprises" | 
-                           industry == "Professional, Scientific, and Technical Services" |
-                           industry == "Real Estate and Rental and Leasing", 
-                           "Professional", 
-                            ifelse(industry == "Accommodation and Food Services" |
-                                   industry == "Arts, Entertainment, and Recreation" |
-                                   industry == "Other Services (except Public Administration)" |
-                                   industry == "Retail Trade", 
-                                 "Services", 
-                                     ifelse(industry == "Construction" | 
-                                            industry == "Manufacturing" |
-                                            industry == "Transportation and Warehousing" |
-                                            industry == "Utilities" |
-                                            industry == "Wholesale Trade", "Production", "n/a"))),
-           "new.wac" = wac.19 - wac.10,
-           "new.rac" = rac.19 - rac.10,
-           "racwac" = ifelse(new.wac > new.rac, "Local", "Resident"),
-           "id" = paste0(GEOID, industry))
-
-
-
-sectors <- lodes.tracts %>%
-  group_by(GEOID, Sector) %>%
-  summarize_if(is.numeric, sum) %>%
-  mutate("rr10" = round((rac.10 / wac.10), 2),
-         "rr19" = round((rac.19 / wac.19), 2),
-         "rc" = as.numeric(round((rr19 - rr10),2)),
-         "id" = paste0(GEOID,Sector))
-
-sectors <- sectors %>%
-  mutate(
-         "rr10" = ifelse(wac.10 < 50, NA, rr10),
-         "rr19" = ifelse(wac.10 < 50, NA, rr19),
-         "rc" = ifelse(wac.10 < 50, NA, rc)) %>%
-  left_join(gent.tracts, by = "GEOID") %>%
-  mutate(as.numeric(ifelse(popE_2010 > 1000, rc, "n/a"))) %>%
-  select(GEOID, popE_2010, rr10, rr19, rc, id)
-
-lodes.tracts <- lodes.tracts %>%
-  left_join(sectors, by = "id") %>%
-  mutate(rc = as.numeric(ifelse(is.finite(rc), rc, "n/a")))
-
-lodes.tracts <- lodes.tracts%>%
-  left_join(flag, by = "GEOID")
-
-lodes.tracts <- lodes.tracts %>%
-  select("GEOID" = GEOID.x, names, Sector, industry,
-         rac.10, rac.19, wac.10, wac.19, new.rac, new.wac,
-         rr10, rr19, rc) 
-
-lodes.tracts <- lodes.tracts %>% 
-  left_join(tracts, by = "GEOID") %>%
-  st_as_sf() 
-
-
-combined.tracts2 <- combined.tracts %>%
-  select(GEOID, popE_2010, popE_2019) %>%
-  st_drop_geometry()
-
-lodes.tracts2 <-lodes.tracts %>% left_join(combined.tracts2, by = "GEOID") %>%
-  #mutate("GEOID" = GEOID.x) %>%
-  mutate(rac.10 = ifelse(popE_2010 > 500, rac.10, NA),
-         rac.19 = ifelse(popE_2010 > 500, rac.19, NA),
-         rac.change = ifelse(popE_2010 > 500, rac.19 - rac.10, NA),
-         wac.change = wac.19 - wac.10)%>%
-  select(GEOID, names, Sector, industry, rac.10, rac.19, wac.10, wac.19, rac.change, wac.change,popE_2010)
-
-st_write(lodes.tracts2, "C:\\Users\\sffra\\OneDrive - Philadelphia Works Inc\\memofiles\\shapefiles\\lodes_tracts2.shp", append=FALSE)
-```
-
-
-
-
-
-<b> Resident Job Ratios</b></br>
-Finally, we focus a great deal of our analysis on a measure we construct called "Resident Job Ratios". We construct this ratio to express the difference of jobs by industry of the residents on a region, to the total jobs that exist in a given region regardless by establishment location. LODES employs two measures for their employment data: Residential Area Characteristics and Work Area Characteristics. By calculating a ratio of the two, we can see the ratio of local to commuter jobs and better understand the labor market dynamics of a given region. Our ratio looks as follows;
-
- 	$Resident \ Jobs\  Ratio: \displaystyle \frac{Residents \ in \ industry \ i \ in \ region \ n}{total \ jobs \ in \ industry \ i \ in \ region n}$
- 	
- * <b> A ratio above one: </b> There are more residents working in this industry than jobs that exist in this industry in a given region. Because there is a surplus of residents, we consider this a "bedroom community", that is where workers live and commute out.
- * <b> A ratio below one: </b> There are fewer residents working in this industry than the jobs that exist in this industry in a given region. Because there is a deficit of workers in this industry in the region, we call this a "commuter community" as the region must be importing workers from elsewhere to close the gap between jobs that exist in this region and local residents that actually work in it.
-
-* A ratio that goes from above to below one is shifting from a bedroom to commuter community. At the start of the analysis period, workers in a given industry lived here and commuted elsewhere to work, but changes in the ratio means that by the end of the analysis period the region was actually importing workers and became a commuter community. 
-
-* A ratio that goes from below to above one if shifting from a commuter to a bedroom community. At the start of the analysis period, workers were commuting into the region to work in a given industry, however by the end there were more workers living in the area than jobs in a given industry so residents were now commuting out
-
-
-
-First, we look at the total RAC/WAC ratio for all industries in each of these areas. We group the regions into three categories based on their RAC/WAC ratios in 2010 and 2019:
-* 1) Stayed below one: these regions started with more jobs than residents, and stayed this way
-* 2) Jumped from below to above one: these regions had more jobs than residents in 2010, but their ratios 
-                                   jumped so they now have more residents than jobs.
-* 3) Stayed above one: these regions started with more jobs than residents, and stayed this way.
-
-
-<b> RAC and WAC totals in each area: </b>
-
-```{R rac wac totals, echo = F, message = FALSE}
-
-rac.wac.totals <- rac.wac.ratio %>%
-  group_by(names) %>%
-  summarize_at(c(3:6), sum) %>%
-  mutate("ratio.10" = round(rac.employment.2010 / wac.employment.2010, 3),
-         "ratio.19" = round(rac.employment.2019 / wac.employment.2019, 3),
-         "ratio.change" = ratio.19 - ratio.10)
-
-library(DT)
-DT::datatable(rac.wac.totals, 
-         #extensions = c('FixedColumns',"FixedHeader"),
-          options = list(scrollX = TRUE, 
-                         scrollY = TRUE,
-                         paging=TRUE,
-                         fixedHeader=FALSE,
-                         rowWidth='10%'),
-         caption = " RAC / WAC Ratios, all industries")
+  subset(`Typical Entry Level Education` != "N/A") %>%
+  dplyr::group_by(`Typical Entry Level Education`) %>%
+  dplyr::summarize(change = sum(change))  %>%
+  ggplot(aes(y=reorder(`Typical Entry Level Education`, -change), x= change))+
+  geom_col(color = "white", fill = "#005a8d") +
+  theme_minimal() +
+  scale_x_continuous(labels=comma_format(accuracy=1)) +
+  labs(x="Change in Employment",y="Typical Entry Level Education")+
+  theme(legend.position="bottom", legend.title=element_blank(), 
+        axis.text.x = element_text(vjust = .5, size=10, color="black", face = "bold"), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.text.y = element_text(size=10, color="black", face = "bold"),
+        legend.text = element_text(size=10, color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_vline(aes(xintercept = 0))
+ggsave("Figure 11 Occupational Employment Change by Typical Degree Requirements in Philadelphia.png",
+       height=4, width = 5, units = "in")  
+
+
+educ.occs <- occs %>% 
+  mutate(change = as.integer(.[[5]])) %>%
+  select(c(`Typical Entry Level Education`, change)) %>%
+  mutate(`Typical Entry Level Education` =  factor(`Typical Entry Level Education`, 
+                                                   levels = c("No formal educational credential", 
+                                                              "High school diploma or equivalent",
+                                                              "Postsecondary nondegree award",
+                                                              "Associate's degree",
+                                                              "Bachelor's degree",
+                                                              "Master's degree",
+                                                              "Doctoral or professional degree"))) %>%
+  na.omit() %>%
+  subset(`Typical Entry Level Education` != "N/A") %>%
+  dplyr::group_by(`Typical Entry Level Education`) %>%
+  dplyr::summarise(change=sum(change)) %>%
+  dplyr::mutate(share = change/sum(change))
+
+
+occs %>% 
+  mutate(change = as.integer(.[[5]]),
+         wage.groups = cut(as.numeric(`Median Hourly Earnings`), breaks = c(0,14,24,34,44,54,Inf), 
+         labels = c("Less than $15", "$15 to $24", "$25 to $34", "$35 to $44", "$45 to $54", "$55 and Higher"))) %>%
+  select(c(`wage.groups`, change)) %>%
+  na.omit() %>%
+  dplyr::group_by(wage.groups) %>%
+  dplyr::summarize(change = sum(change)) %>%
+  ggplot(aes(y=wage.groups, x= change))+
+  geom_col(color = "white", fill = "#005a8d") +
+  coord_flip() +
+  theme_minimal() +
+  scale_x_continuous(labels=comma_format(accuracy=1)) +
+  labs(x="Change in Employment",y="Median Hourly Wage")+
+  theme(legend.position="bottom", legend.title=element_blank(), 
+        axis.text.x = element_text(vjust = 1, hjust = 1, size=10, color="black", angle = 45, face = "bold"), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0), size = 10, color="black", face ="bold"),
+        axis.text.y = element_text(size=10, color="black", face = "bold"),
+        legend.text = element_text(size=10, color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  geom_vline(aes(xintercept = 0))
+ggsave("Figure 10 Occupational Employment Change by Median Wage in Philadelphia.png",
+       height=4, width = 5, units = "in")
+
+wage.occs <- occs %>% 
+  mutate(change = as.integer(.[[5]]),
+         wage.groups = cut(as.numeric(`Median Hourly Earnings`), breaks = c(0,14,24,34,44,54,Inf), 
+                           labels = c("Less than $15", "$15 to $24", "$25 to $34", "$35 to $44", "$45 to $54", "$55 and Higher"))) %>%
+  select(c(`wage.groups`, change)) %>%
+  na.omit() %>%
+  dplyr::group_by(wage.groups) %>%
+  dplyr::summarize(change = sum(change)) %>%
+  dplyr::mutate(share = change/sum(change))
+
+rm(educ.occs, occs, wage.occs)
+
+#### UC Claims ####
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Inputs")
+
+onet <- readxl::read_excel("Occupation Data.xlsx") 
+
+uc.claims <- readxl::read_excel("Philadelphia UC Claims.xlsx") %>%
+  mutate(`New Claimant Claim Date` = as.Date(`New Claimant Claim Date`))
+
+
+claims.trend <- uc.claims %>%
+  #mutate(`New Claimant Claim Date` = as.Date(`New Claimant Claim Date`)) %>%
+  filter(`New Claimant Claim Date` >= floor_date(today(), unit = "month") - months(25) &
+         uc.claims$`New Claimant Claim Date` <= ceiling_date(today(), unit = "month") - months(1)) %>%
+  mutate(year = year(`New Claimant Claim Date`),
+         month = month(`New Claimant Claim Date`, abbr = T, label = T),
+         period = my(paste(month, year, sep = " "))) %>%
+  group_by(year, month, period) %>%
+  summarize(claims = n_distinct(`Interface User ID`)) %>%
+  slice_max(order_by = period, n = 24)
+
+claims.occupations <- uc.claims %>%
+  #mutate(`New Claimant Claim Date` = as.Date(`New Claimant Claim Date`)) %>%
+  filter(`New Claimant Claim Date` >= floor_date(today(), unit = "month") - months(3) &
+          (`New Claimant Claim Date` <= ceiling_date(today(), unit = "month") - months(1))) %>%
+  group_by(`New Claimant Occupational Title`) %>%
+  summarize(claims = n_distinct(`Interface User ID`)) %>%
+  mutate(SOC = paste0(substr(`New Claimant Occupational Title`, 1,2), "-",
+                      substr(`New Claimant Occupational Title`, 3,6))) %>%
+  left_join(onet) %>%
+  na.omit(`Occupational Title`) %>%
+  group_by(`Occupational Title`) %>%
+  summarize(claims = sum(claims)) %>%
+  slice_max(claims, n = 15)
+
+claims.employers <- uc.claims %>%
+ # mutate(`New Claimant Claim Date` = as.Date(`New Claimant Claim Date`)) %>%
+  filter(`New Claimant Claim Date` >= floor_date(today(), unit = "month") - months(3) &
+           `New Claimant Claim Date` <= ceiling_date(today(), unit = "month") - months(1)) %>%
+  mutate(`Interface Employer Name` = stringr::str_to_upper(`Interface Employer Name`)) %>%
+  group_by(`Interface Employer Name`) %>%
+  summarize(claims = n_distinct(`Interface User ID`)) %>%
+  na.omit(`Interface Employer Name`) %>%
+  slice_max(claims, n = 10)
+
+education <- readxl::read_excel("education.xlsx")
+
+claims.education <- uc.claims %>%
+  filter(`New Claimant Claim Date` >= floor_date(today(), unit = "month") - months(3) &
+           `New Claimant Claim Date` <= ceiling_date(today(), unit = "month") - months(1)) %>%
+  left_join(education, by = "Interface Degree Code") %>%
+  group_by(`Educational Attainment`) %>%
+  summarize(claims = n_distinct(`Interface User ID`)) %>%
+  mutate(`Educational Attainment` = replace_na(`Educational Attainment`, "Not Reported"),
+         `Educational Attainment` = str_wrap(`Educational Attainment`,10))
+
+
+
+setwd("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Outputs")
+
+claims.trend %>%
+  ggplot(aes(x = month, y = claims)) +
+  geom_col(fill = "#007abd") +
+  theme_minimal() +
+  #scale_fill_manual(values = "#007abd") +
+  scale_y_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6))+
+  labs(x=NULL,y="New Initial Claims")+
+  theme( 
+    axis.text.x = element_text(size=11, color="black", angle = 90, vjust = .5, hjust = 1, margin = margin(t=-5, b = 10)), 
+    axis.title.y = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "none",
+    axis.line.y = element_line(),
+    strip.placement = "outside",
+    strip.text = element_text(face="bold", size = 11, color="black"),
+    panel.grid.major.y = element_line(color = "grey90"),
+    panel.grid.minor.y = element_line(color = "grey95"),
+    panel.grid = element_blank()) +
+  #scale_x_date(date_labels = "%b %Y", breaks = "1 month", expand = c(0.01,0.01)) +
+  geom_hline(aes(yintercept = 0)) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Figure 7 Claims Trend.png",
+       height=3.5, width = 8, units = "in")
+
+
+claims.education %>%
+  ggplot(aes(x = `claims`, y = reorder(`Educational Attainment`, claims),
+             label = comma(`claims`, accuracy = 1)))+
+  geom_col(fill = "#005A8D", width=0.75) +
+  scale_x_continuous(labels=comma_format(accuracy=1), breaks=scales::pretty_breaks(n = 6))+
+  theme_minimal() +
+  labs(x=NULL,y=NULL)+
+  theme(legend.position="bottom", legend.title=element_blank(), 
+        axis.text.x = element_text(size=10, color="black"),
+        axis.text.y = element_text(size=10, color="black", margin=margin(r= -5)),
+        legend.text = element_text(size=10, color="black", face="bold"),
+        panel.grid = element_blank(),
+        panel.grid.major.x = element_line(color = "grey90"),
+        panel.grid.minor.x = element_line(color = "grey95")) +
+  guides(labels=guide_legend(reverse=T)) +
+  guides(fill = guide_legend(reverse = T)) +
+  geom_vline(aes(xintercept = 0), lwd = 1 )
+ggsave("Figure 6 UC Education.png",
+       height=5, width = 4.8, units = "in")
+
+
+claims.counts <- claims.trend %>%
+  ungroup() %>%
+  slice_max(order_by = period, n = 3) %>%
+  summarize(total = sum(claims))
+  
+
+rm(claims.education, claims.trend, education, uc.claims)
+
+#### Getting 3 Digit QCEW Data and Making Tables ####
+naics.codes <- read_csv("A:\\LMI Reporting\\Quarterly LMI Report\\Data and Charts\\ggplot Inputs\\NAICScodes.csv")
+
+QCEW3digit <- blsQCEW('Area', year = 2022, quarter = 2, area='42101') %>% 
+  subset(agglvl_code == 75 & own_code == 5 & disclosure_code != "N" & oty_disclosure_code != "N") %>%
+  rename(Year = year,
+         Employment = month3_emplvl,
+         LQ = lq_month3_emplvl,
+         Annual.Est.Change = oty_qtrly_estabs_chg,
+         Annual.Emp.Pct.Change = oty_month3_emplvl_pct_chg,
+         Annual.Emp.Change = oty_month3_emplvl_chg) %>%
+  mutate(Aggregation = "Three-Digit") %>%
+  left_join(naics.codes, by = c("industry_code" = "code"))
+
+#Top Employment Growth Table
+QCEW3digit %>%
+  slice_max(Annual.Emp.Change, n=10) %>%
+  filter(Annual.Emp.Change > 0) %>%
+  dplyr::select(industry_code, title, Annual.Est.Change, Annual.Emp.Change, Annual.Emp.Pct.Change) %>%
+  mutate(Annual.Emp.Change = paste0("+", prettyNum(Annual.Emp.Change,big.mark=","))) %>%
+  mutate(Annual.Emp.Pct.Change = percent(Annual.Emp.Pct.Change/100,accuracy = .1, big.mark = ",")) %>%
+  rename("Industry Title" = title,
+         "Establishment Change" = Annual.Est.Change, 
+         "Employment Change" = Annual.Emp.Change,
+         "NAICS" = industry_code,
+         "Employment Percent Change" = Annual.Emp.Pct.Change) %>%
+  gt() %>%
+  cols_align(align = "center", columns = c(NAICS,`Employment Change`,`Employment Percent Change`, `Establishment Change`))  %>%
+  tab_style(
+    style = list(cell_fill(color = "#007abd"), cell_text(weight = "bold", color="white", font = "Arial")),
+    locations = cells_column_labels(columns = c(NAICS,`Industry Title`, `Employment Change`, `Employment Percent Change`, `Establishment Change`)))  %>%
+tab_style(
+    style=cell_text(font = "Arial"), 
+    locations = cells_body(columns = c(NAICS,`Industry Title`, `Employment Change`, `Employment Percent Change`, `Establishment Change`))) %>%
+  tab_options(
+    column_labels.padding = 10,
+    table.width = 1000
+  ) %>%
+  cols_width(c(`Industry Title`) ~ px(450)) %>%
+  gtsave("Appendix Table 3 Top Employment Growth.png", expand = 10, vwidth =1100)
+
+## Top Employment Decline Table
+QCEW3digit %>%
+  slice_min(Annual.Emp.Change, n=10) %>%
+  filter(Annual.Emp.Change < 0) %>%
+  dplyr::select(industry_code, title, Annual.Est.Change, Annual.Emp.Change, Annual.Emp.Pct.Change) %>%
+  mutate(Annual.Emp.Change = prettyNum(Annual.Emp.Change,big.mark=",")) %>%
+  mutate(Annual.Emp.Pct.Change = percent(Annual.Emp.Pct.Change/100,accuracy = .1, big.mark = ",")) %>%
+  rename("Industry Title" = title,
+         "Establishment Change" = Annual.Est.Change, 
+         "Employment Change" = Annual.Emp.Change,
+         "NAICS" = industry_code,
+         "Employment Percent Change" = Annual.Emp.Pct.Change) %>%
+  gt() %>%
+  cols_align(align = "center", columns = c(NAICS,`Employment Change`,`Employment Percent Change`, `Establishment Change`))  %>%
+  tab_style(
+    style = list(cell_fill(color = "#007abd"), cell_text(weight = "bold", color="white", font = "Arial")),
+    locations = cells_column_labels(columns = c(NAICS,`Industry Title`, `Employment Change`, `Employment Percent Change`, `Establishment Change`)))  %>%
+  tab_style(
+    style=cell_text(font = "Arial"), 
+    locations = cells_body(columns = c(NAICS,`Industry Title`, `Employment Change`, `Employment Percent Change`, `Establishment Change`))) %>%
+  tab_options(
+    column_labels.padding = 10,
+    table.width = 1000
+  ) %>%
+  cols_width(c(`Industry Title`) ~ px(450)) %>%
+  gtsave("Appendix Table 4 Top Employment Decline.png", expand = 10, vwidth =1100)
+
+## Largest Industries
+QCEW3digit %>%
+  mutate(Employment = round(Employment, -2),
+         Annual.Emp.Change = round(Annual.Emp.Change,-1)) %>%
+  slice_max(Employment, n=15) %>%
+  dplyr::select(industry_code,title, Employment, qtrly_estabs, LQ) %>%
+  mutate(qtrly_estabs = prettyNum(qtrly_estabs, big.mark = ",")) %>%
+  rename("Industry Title" = title,
+         "Establishments" = qtrly_estabs,
+         "Total Employment" = Employment,
+         "Location Quotient" = LQ,
+         "NAICS" = industry_code) %>%
+  gt() %>%
+  fmt_number(columns = c(`Total Employment`), decimals = 0) %>%
+  cols_align(align = "center", columns = c(NAICS, `Total Employment`, `Location Quotient`, `Establishments`)) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#007abd"),
+      cell_text(weight = "bold", color="white", font = "Arial")
+    ),
+    locations = cells_column_labels(columns = c(NAICS,`Industry Title`, `Total Employment`, `Location Quotient`, `Establishments`))
+  ) %>%
+  tab_style(
+    style=cell_text(font = "Arial"), 
+    locations = cells_body(columns = c(NAICS,`Industry Title`, `Total Employment`, `Location Quotient`, `Establishments`))) %>%
+  cols_width(c(`Industry Title`) ~ px(450)) %>%
+  tab_options(
+    column_labels.padding = 10,
+    table.width = 1100
+  ) %>%
+  gtsave("Appendix Table 1 Largest Industries.png", expand = 10, vwidth=1200)
+
+## Top Specialized Industries
+QCEW3digit %>%
+  mutate(Employment = round(Employment, -2),
+         Annual.Emp.Change = round(Annual.Emp.Change,-1)) %>%
+  slice_max(LQ, n=10) %>%
+  dplyr::select(industry_code,title, Employment, qtrly_estabs, LQ) %>%
+  mutate(qtrly_estabs = prettyNum(qtrly_estabs, big.mark = ",")) %>%
+  rename("Industry Title" = title,
+         "Establishments" = qtrly_estabs,
+         "Total Employment" = Employment,
+         "Location Quotient" = LQ,
+         "NAICS" = industry_code) %>%
+  gt() %>%
+  fmt_number(columns = c(`Total Employment`), decimals = 0) %>%
+  cols_align(align = "center", columns = c(NAICS, `Total Employment`, `Location Quotient`, `Establishments`)) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#007abd"),
+      cell_text(weight = "bold", color="white", font = "Arial")
+    ),
+    locations = cells_column_labels(columns = c(NAICS,`Industry Title`, `Total Employment`, `Location Quotient`, `Establishments`))
+  ) %>%
+  tab_style(
+    style=cell_text(font = "Arial"), 
+    locations = cells_body(columns = c(NAICS,`Industry Title`, `Total Employment`, `Location Quotient`, `Establishments`))) %>%
+  cols_width(c(`Industry Title`) ~ px(450)) %>%
+  tab_options(
+    column_labels.padding = 10,
+    table.width = 1100
+  ) %>%
+  gtsave("Appendix Table 2 Specialized Industries.png", expand = 10, vwidth=1200)
+
+#Removing Unnecessary Data
+rm(naics.codes, onet, QCEW.Previous, QCEW3digit, quarter.current, quarter.previous, year.current, year.previous)
+
+
+
+#### END ####
 
 
 ```
 
+## Including Plots
 
-```{R table, echo = F, message = FALSE}
+You can also embed plots, for example:
 
-library(DT)
-DT::datatable(rac.wac.bin,
-         #extensions = c('FixedColumns',"FixedHeader"),
-          options = list(scrollX = TRUE, 
-                         scrollY = TRUE,
-                         paging=TRUE,
-                         fixedHeader=FALSE,
-                         rowWidth='10%'),
-         caption = "Ratio bins")
-
-
-#rac.wac.bin.df <- as.data.frame(rac.wac.bin)%>%
- #rac.wac.ratio <- write.csv("C:\\Users\\sffra\\Downloads\\phillyworks\\rac_wac_ratio.csv")
+```{r pressure, echo=FALSE}
+plot(pressure)
 ```
 
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
