@@ -7,3 +7,6 @@ output: html_document
 
 <a href = "https://samfraley.github.io">
 ![](images/gent_dashboard.png)
+
+
+<font size = "5"> <a href="GJC.html" title="GJC Assessment">GJC Assessment</a></font>
