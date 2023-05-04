@@ -1,0 +1,340 @@
+---
+title: "Good Jobs Lab Fellow- Assessment"
+author: "Sam Fraley"
+date: "4/30/2023"
+output: html_document
+---
+
+```{r setup, message = F, warning = F}
+library(tidyverse)
+library(tidycensus)
+library(tigris)
+library(readxl)
+library(tmap)
+library(sf)
+library(DT)
+library(gt)
+```
+
+<font size = "6"> Read in the raw data </font>
+
+```{r readin, message = F}
+setwd("C:\\Users\\sfraley\\Downloads\\PCV")
+
+areas <- readxl::read_excel("Zip Codes_Rural and Urban_Reference.xlsx", sheet =2,
+                  col_types = c("text","numeric","numeric","numeric","numeric","numeric")) %>%
+  rename("Zip" = `Zip Code`)
+
+wage <- readxl::read_excel("Employee Wage and Zip Code Data.xlsx", sheet =1,
+                            col_types = c("text","numeric","text","text")) %>%
+  rename("Zip" = `Zip Code of Residence`)
+
+```
+
+ $-$
+ $-$
+ $-$
+ $-$
+ 
+
+<font size = "5"> Create a "rural.flag" variable, for zip codes that have over 75% rural population. Also create "rural.degree", per [US Census Method](https://www.census.gov/newsroom/blogs/random-samplings/2016/12/rurality_matters.html) to conduct three way ANOVA.
+Join zip code characteristics to wage data. </font> 
+```{r flag,  message = F, warning = F}
+#find quantiles
+join <- wage %>%
+  left_join(areas, by = c("Zip" = "Zip")) %>%
+  mutate(count = 1,
+         per.rural = round(`% Rural`, 2)) %>% #round percent
+  na.omit()
+
+#75th quartile value
+
+
+#flag for if values are above the 75th quartile
+#degree flag per Census methodology to find level of rural pop
+join <- join %>%
+  mutate(
+    rural.flag = ifelse(`per.rural` > 0.75, 1, 0),
+         (rural.degree = case_when(
+                       `% Rural` == 1 ~ "Fully Rural",
+                       `% Rural` > 0.5 & `% Rural` < 1 ~ "Mostly Rural",
+                       `% Rural` < .5 ~ "Urban",
+  ))
+)
+
+
+print(paste0("Total rural zips: ", sum(join$rural.flag)))
+
+```
+ $-$
+ $-$
+ $-$
+ $-$
+ <b> <center> <font size="6"> "join" data table</font> </center> </b>
+```{r print areas,  message = F, warning = F, echo = F}
+DT::datatable(join,
+         #extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         scrollY = TRUE,
+                         paging=T,
+                         fixedHeader=FALSE,
+                         rowWidth='10%'))
+```
+ $-$
+ $-$
+ $-$
+ $-$
+<br> <font size = "6"> <b> Summary stats for employment and zip code data </b> </font> <br>
+
+<font size = "5"> First, if we are going to compare different means from the population (rural vs non-rural), test for statistical significance between the means to make sure we can discuss mean differences accurately. Start with three way ANOVA using the group flag. Because wage is in both hourly and salary format, convert them both to a biweekly amount to standardize to the same time period. </font>
+```{r ANOVA, echo = T,  message = F, warning = F}
+
+anova <- join %>%
+  mutate(standardize.wage = ifelse(`Wage Type` == "Salary", Wage / 12, (Wage * 80))) %>%
+  mutate(rural.degree = case_when(
+                       `% Rural` == 1 ~ "Fully Rural",
+                       `% Rural` > 0.5 & `% Rural` < 1 ~ "Mostly Rural",
+                       `% Rural` < .5 ~ "Urban",
+  ))
+
+anova.res <- aov(standardize.wage ~ rural.degree, data = anova)
+summary(anova.res)
+
+```
+<font size = "5"> <b> ANOVA shows statistical significance. </b> But we are going to use only two groups for analysis (rural and non rural), so use independent sample t-test to test the difference in means between two groups </font> <br>
+<br>
+<font size = "5"> <b> Independent sample t-test</b> </font>
+```{r t.test, echo = T, message= FALSE}
+
+t.test <- t.test(Wage ~ rural.flag, var.equal = T, data = anova)
+t.test
+
+```
+<font size = "5"> <b> t-test is also significant for difference in means </b> </font> <br>
+
+<font size = "6"> <b> Plot and visualize data to get a better idea of what we are working with. </b> </font> <br>
+
+
+<font size = "5"> Plotting Salary vs % Rural, and Hourly vs % Rural </font> <br>
+```{r chart1,  message = F, warning = F}
+library(scales)
+salary.chart <- join %>%
+  filter(`Wage Type` == "Salary") %>%
+  select(Zip, Wage, `% Rural`)
+  
+hourly.chart <- join %>%
+  filter(`Wage Type` == "Hourly") %>%
+  select(Zip, Wage, `% Rural`)
+  
+salary.chart%>%
+  ggplot(aes(x = `% Rural`, y = Wage))+
+ theme_classic() +
+  geom_point(size = 3) +
+  xlab("Percent Rural Population") +
+  ylab("Salary") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::dollar_format(prefix="$"))
+
+hourly.chart%>%
+  ggplot(aes(x = `% Rural`, y = Wage))+
+ theme_classic() +
+  geom_point(size = 3)+
+  xlab("Percent Rural Population") +
+  ylab("Hourly") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::dollar_format(prefix="$"))
+
+```
+<br> <font size = "5"> No clear relationship, appears to be more observations and variation in urban areas. </font> <br>
+<font size = "5"> <b> Salary wage distribution, all areas</b> </font> <br>
+```{r sumstats2, echo = T,  message = F, warning = F}
+
+ggplot(join, aes(x=Wage)) +
+  theme_classic()+
+  geom_histogram(data = subset(join, `Wage Type` == "Salary"), fill = "#007abd", alpha = 0.5, col = "black") +
+    geom_histogram(data = subset(join, `Wage Type` == "Salary" & rural.flag == 1), alpha = 0.8, fill = "#3349b0", col = "black") +
+     geom_vline(data = subset(join, `Wage Type` == "Salary"), aes(xintercept = mean(Wage)),col='green',size=2, alpha = 0.7) +
+    geom_vline(data = subset(join, `Wage Type` == "Salary" & rural.flag == 1), aes(xintercept = mean(Wage)),col='red',size=2, alpha = 0.7) +
+    scale_x_continuous(labels = scales::dollar_format(prefix="$")) + 
+  xlab("Salary") 
+```
+<br> <font size = "5"> <b> Hourly wage distribution, all areas</b> </font>
+```{r sumstats, echo = T, message = F, warning = F}
+
+ggplot(join, aes(x=Wage)) +
+  theme_classic()+
+  geom_histogram(data = subset(join, `Wage Type` == "Hourly"), fill = "#007abd", alpha = 0.5, col = "black") +
+    geom_histogram(data = subset(join, `Wage Type` == "Hourly" & rural.flag == 1), alpha = 0.8, fill = "#3349b0", col = "black") +
+    scale_x_continuous(labels = scales::dollar_format(prefix="$")) + 
+   geom_vline(data = subset(join, `Wage Type` == "Hourly"), aes(xintercept = mean(Wage)),col='green',size=2, alpha = 0.7) +
+    geom_vline(data = subset(join, `Wage Type` == "Hourly" & rural.flag == 1), aes(xintercept = mean(Wage)),col='red',size=2, alpha = 0.7) +
+  xlab("Hourly")
+``` 
+<br> <font size = "5"> <b> Summary Table </b> </font> <br>
+```{r sum table, echo = T,  message = F, warning = F}
+summary.table <- join %>%
+   group_by(rural.flag, `Wage Type`) %>%
+   summarize(across(Wage, mean), 
+             across(count, sum))
+
+DT::datatable(summary.table)
+
+overall.summary.table <- join %>%
+  group_by(`Wage Type`) %>%
+   summarize(across(Wage, mean), 
+             across(count, sum))
+print(overall.summary.table)
+
+
+DT::datatable(overall.summary.table)
+
+```
+
+<font size = "6"> <b> Grouping by Zip Codes </b> </font> <br>
+<font size = "5"> Use distinct function to find list of zip codes present in wage data, and their associated population data. Sum the count and rural flags to find the count of zip codes in wage data, and how many are rural..</font>
+```{r sumstats3, echo = T, results = 'hide',  message = F, warning = F}
+
+wage.zips <- join %>%
+  distinct(Zip, `Rural Population`, `% Rural`, rural.flag, count)
+
+num.wage.zips <- sum(wage.zips$count)
+num.rural.zips <- sum(wage.zips$rural.flag)
+
+```
+
+<font size = "5"> Zip code totals: </font>
+```{r sumstats2b, echo = F,  message = F, warning = F}
+cat("Total zip codes in wage data: ", num.wage.zips)
+cat("Zip codes that are rural: ", num.rural.zips)
+```
+<br> <font size = "6"> <b> Grouping by location / place based analysis </b> </font> <br>
+<font size = "5"> Plot zip codes using tigris() and sf() package to visually identify clusters.</font>
+
+ $-$
+ $-$
+ 
+```{r place, message=F, warning=F, results = "hide"}
+library(sf)
+library(tigris)
+
+options(tigris_use_cache = TRUE)
+
+states <- tigris::states() %>%
+  st_as_sf() %>%
+  select(STATEFP, NAME)
+
+zip.points <- tigris::zctas() %>%
+  filter(ZCTA5CE20 %in% wage.zips$Zip) %>% st_centroid()
+
+zip.plot <- wage.zips %>% 
+  left_join(zip.points, by = c("Zip" = "ZCTA5CE20")) %>%
+  mutate(index.id = substr(Zip, 0, 1),
+         prefix = substr(Zip, 0, 3)) %>%
+  st_as_sf() %>%
+  st_join(states)
+
+
+#st_write(zip.plot,"zip_plot2.shp")
+```
+
+```{r map,  message = F, warning = F}
+
+tmap_mode("view") 
+tm_shape(zip.plot) +
+  tm_dots(col = c("index.id"), size = 0.7) +
+  tm_shape(zip.plot) +
+  tm_dots(col = c("rural.flag"), size = 0.2) +
+  tm_shape(states) +
+  tm_borders()
+
+
+```
+
+<font size = "5"> Visually, we see large clusters in Oregon and Minnesota that have high number of observations of both rural and urban zip codes. I want to look at variation in rural vs overall total wage averages for these specific geographies. Filter the state shapefiles for just an OR and MN boundary, use st_intersection() to selection wage observations in these two states. </font>
+```{r oregon and mn totals,  message = F, warning = F}
+
+cluster <- zip.plot %>%
+  filter(NAME == "Oregon" | NAME == "Minnesota") %>%
+  left_join(wage, by = c("Zip"))
+
+
+tmap_mode("view") 
+tm_shape(cluster) +
+  tm_dots(col = c("index.id"), size = 0.7) +
+  tm_shape(cluster) +
+  tm_dots(col = c("rural.flag"), size = 0.2) +
+  tm_shape(states) +
+  tm_borders()
+
+
+library(sf)
+
+
+cluster.totals <- cluster %>%
+  mutate(State = ifelse(STATEFP == "27", "Minnesota", "Oregon")) %>%
+  group_by(State) %>%
+  summarize_at(c("count", "rural.flag"), sum) %>%
+  st_drop_geometry() 
+
+cluster.totals %>%
+  gt() %>%
+  cols_label(count = "Total Wages Reported", rural.flag = "Wages Reported in Rural Zips")
+
+```
+
+```{r plac2e,  message = F, warning = F}
+
+cluster.mean <- cluster %>%
+  group_by(STATEFP, `Wage Type`) %>%
+  summarize_at(c("Wage"), mean) %>%
+  select(STATEFP, `Wage Type`, Wage) %>%
+  mutate(joinid = paste0(STATEFP, `Wage Type`)) %>%
+  st_drop_geometry()
+
+cluster.rural.mean <- cluster %>%
+  group_by(STATEFP, rural.flag, `Wage Type`) %>%
+  summarize_at(c("Wage"), mean) %>%
+  select(STATEFP, rural.flag, `Wage Type`, Wage) %>%
+  mutate(joinid = paste0(STATEFP, `Wage Type`))
+
+cluster.table <- cluster.rural.mean %>%
+  left_join(cluster.mean, by = c("joinid")) %>%
+  filter(rural.flag == 1) %>%
+  mutate(State = ifelse(STATEFP.x == "27", "Minnesota", "Oregon")) %>%
+  select(State, `Wage Type.x`, "Rural Mean" = Wage.x, "Total Mean" = Wage.y) %>%
+  mutate(Difference = round(`Rural Mean` - `Total Mean`, 2)) %>%
+  st_drop_geometry()
+
+rm(cluster.mean, cluster.rural.mean)
+
+cluster.table %>%
+  gt() %>%
+  fmt_number(
+    columns = c("Rural Mean", "Total Mean", "Difference"),
+    decimals = 2,
+    use_seps = T
+  )
+```
+ $-$
+ $-$
+ ``
+<br> <font size = "6"> <b> Grouping by Company </b> </font> <br>
+<font size = "5"> Look at rural employment by companies. Mean wages for companies that employ the most rural jobs. </font>
+```{r rural, message=FALSE}
+companies <- join %>%
+  group_by(`Company ID`) %>%
+    summarize(across(Wage, mean), 
+             across(count, sum),
+             across(rural.flag, sum))
+ print(paste0("Total wages in rural areas: ",sum(companies$rural.flag)))
+
+
+companies.wage <- join %>%
+  filter(rural.flag == 1) %>%
+  group_by(`Company ID`, `rural.flag`, `Wage Type`) %>%
+    summarize(across(Wage, mean))
+
+companies.wage %>%
+  DT::datatable()
+  
+```
