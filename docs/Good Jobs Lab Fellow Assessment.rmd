@@ -14,6 +14,8 @@ library(tmap)
 library(sf)
 library(DT)
 library(gt)
+
+install.packages("ggpubr")
 ```
 
 <font size = "6"> Read in the raw data </font>
@@ -126,6 +128,15 @@ hourly.chart <- join %>%
   filter(`Wage Type` == "Hourly") %>%
   select(Zip, Wage, `% Rural`)
   
+
+cor(salary.chart$`% Rural`, salary.chart$Wage, method = c("pearson"))
+
+ggscatter(hourly.chart, x = "% Rural", y = "Wage", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Miles/(US) gallon", ylab = "Weight (1000 lbs)")
+
+
 salary.chart%>%
   ggplot(aes(x = `% Rural`, y = Wage))+
  theme_classic() +
@@ -143,6 +154,11 @@ hourly.chart%>%
   ylab("Hourly") +
   scale_x_continuous(labels = scales::percent) +
   scale_y_continuous(labels = scales::dollar_format(prefix="$"))
+
+
+plot(salary.chart$`% Rural`, salary.chart$Wage, pch = 16) +
+lines(lowess(salary.chart$`% Rural` ~ salary.chart$Wage), col = 4, lwd = 3)
+
 
 ```
 <br> <font size = "5"> No clear relationship, appears to be more observations and variation in urban areas. </font> <br>
