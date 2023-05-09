@@ -3,7 +3,7 @@ title: "Projects"
 output: html_document
 ---
 
-<font size = "5"> <a href="gent_dashboard.html" title="Gentrification Interactive Dashboard">Gentrification Interactive Dashboard</a></font>
+<font size = "5"> <a href="Gentrification.html" title="Gentrification Interactive Dashboard">Gentrification Interactive Dashboard</a></font>
 
 <a href = "https://samfraley.github.io">
 ![](images/gent_dashboard.png)
