@@ -13,3 +13,9 @@ output: html_document
 
 <font size = "5"> <a href="inflation.html" title="Inflation Analysis - Summer 2022"> Inflation Analysis - Summer 2022 </a></font>
 
+
+<font size = "5"> <a href="currentconditions.html" title="Philadelphia Current Labor Market Conditions Dashboard"> Philadelphia Current Labor Market Conditions Dashboard </a></font>
+
+
+<font size = "5"> <a href="cluster.html" title="Philadelphia Industry Clusters Dashboard"> Philadelphia Industry Clusters Dashboard </a></font>
+
