@@ -1,0 +1,502 @@
+---
+title: "Inflation Analysis Script"
+output: html_document
+---
+
+```` {set up, include = F}
+library(lubridate)
+library(tidyverse)
+library(blsAPI)
+library(scales)
+
+setwd("A:\\Research and Analysis Team\\Research and Special Reporting\\Inflation Analysis Files")
+
+````
+
+
+```{r}
+#### Inflation CPI ####
+
+
+payload <- list('seriesid' = c('CUUR0000SA0',
+                               'CUURS12BSA0'), 
+                'startyear'='2015', 
+                'endyear' = '2030', 
+                'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+cpi.inflation <- blsAPI(payload, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUURS12BSA0', "Philadelphia", "United States")) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:5, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+
+
+cpi.inflation %>%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#007abd", "#002D46")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Figure 15 Inflation.png",
+       height=4, width = 8, units = "in")
+
+
+
+##### goods services ####
+services <- list('seriesid' = c('CUURS12BSAS',
+                               'CUUR0000SAS'), 
+                'startyear'='2015', 
+                'endyear' = '2030', 
+                'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+cpi.services <- blsAPI(services, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUURS12BSAS', "Philadelphia", "United States")) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:5, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+
+
+cpi.services %>%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#007abd", "#002D46")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Philly Goods vs Services 2.jpeg",
+       height=4, width = 8, units = "in")
+
+
+goods <- list('seriesid' = c('CUURS12BSA0L1E',
+                                    'CUUR0000SA0L1E'), 
+                     'startyear'='2015', 
+                     'endyear' = '2030', 
+                     'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+cpi.goods <- blsAPI(goods, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUURS12BSA0L1E', "Philadelphia", "United States")) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:5, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+
+year <- c("June 2021", "June 2022")
+Goods <- c(0.045, 0.056)
+Services <- c(0.018, 0.064)
+phl.services.chart <- data.frame(year, Goods, Services)
+
+phl.ser2 <- phl.services.chart %>%
+  pivot_longer(c(2:3), names_to = "measure", values_to = "change")
+
+phl.ser2 %>%
+ggplot(aes(x = year, y = change, fill = measure)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(labels = c("Core Goods","Services"), values = c("#e5b11b", "#dd4826")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) 
+ggsave("Goods vs Services YoY.jpeg",
+       height=6, width = 5, units = "in")
+
+
+
+#### Philly table ####
+table <- list('seriesid' = c('CUURS12BSAF1',
+                             'CUURS12BSAH21',
+                             'CUURS12BSETB01',
+                             'CUURS12BSEHA',
+                             'CUURS12BSETA01',
+                             'CUURS12BSETA02',
+                             'CUURS12BSAM',
+                             'CUURS12BSEEB'
+                             ), 
+                'startyear'='2015', 
+                'endyear' = '2030', 
+                'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+philly.table <- blsAPI(table, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUURS12BSAF1', "Food",
+                            ifelse(seriesID == 'CUURS12BSAH21', "Household Energy",
+                                   ifelse(seriesID == 'CUURS12BSETB01', "Gas",
+                                          ifelse(seriesID == 'CUURS12BSEHA', "Rent",
+                                                 ifelse(seriesID == 'CUURS12BSETA01', "New Cars",
+                                                        ifelse(seriesID == 'CUURS12BSETA02', "Used Cars",
+                                                               ifelse(seriesID == 'CUURS12BSAM', "Medical Care",
+                                                                      ifelse(seriesID == 'CUURS12BSEEB', "Tuition & Child Care", "NA"))))))))) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:11, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+write.csv(philly.table, "A:\\Research and Special Reporting\\Inflation Analysis Files\\philly_table.csv")
+
+#US TABLE
+us.table <- list('seriesid' = c('CUUR0000SAF1',
+                             'CUUR0000SAH21',
+                             'CUUR0000SETB01',
+                             'CUUR0000SEHA'), 
+              'startyear'='2015', 
+              'endyear' = '2030', 
+              'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+us.table2 <- blsAPI(us.table, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUUR0000SAF1', "Food",
+                            ifelse(seriesID == 'CUUR0000SAH21', "Household Energy",
+                                   ifelse(seriesID == 'CUUR0000SETB01', "Gas",
+                                          ifelse(seriesID == 'CUUR0000SEHA', "Rent", "NA"))))) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:7, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+write.csv(us.table2, "A:\\Research and Special Reporting\\Inflation Analysis Files\\us_table.csv")
+
+
+cpi.inflation %>%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#007abd", "#002D46")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+ggsave("Figure 15 Inflation.png",
+       height=4, width = 8, units = "in")
+
+write.csv(cpi.inflation, "R:\\Research, Policy and Innovation\\Research and Data\\Research and Analysis Team\\Research and Special Reporting\\Inflation Analysis Files\\cpi.csv")
+
+
+
+##### US Unemployment####
+unemployment <- list('seriesid' = c('LAUCN421010000000003'), 
+              'startyear'='2015', 
+              'endyear' = '2030', 
+              'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+unemployment <- blsAPI(unemployment, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'LAUCN421010000000003', "Unemployment", "YoY")) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+pivot_longer(4, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+philly.inflation <- cpi.inflation %>%
+  filter(geography == "Philadelphia")
+
+unemployment.inflation <- left_join(unemployment, philly.inflation, by = "period") %>%
+  na.omit() %>%
+  dplyr::select(period, "Unemployment" = value.x, "Inflation" = yoy) %>%
+  mutate(Unemployment = Unemployment / 100)
+
+unemployment.inflation.viz <- unemployment.inflation %>%
+  pivot_longer(c(2:3), names_to = "Measure", values_to = "Values")
+
+unemployment.inflation.viz %>%
+  ggplot(aes(x = period, y = Values, color = Measure)) +
+  geom_line(size = 2) + xlab("") + ylab("Year-over-Year Change") + labs(fill = "") +
+  scale_color_manual(values = c("#c3972d", "#a83523"))+
+  scale_x_date(labels = date_format("%m/%y"), breaks = date_breaks("2 month")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0.1,0),  sec.axis = dup_axis()) +
+  geom_hline(yintercept=c(0,0), linetype = "dotted") +
+  theme(
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold"))
+     
+ggsave("Unemployment vs Inflation Chart.jpeg",
+       height=4, width = 8, units = "in")
+
+
+####
+
+rm(unemployment2)
+
+##### Earnings ####
+
+earnings <- list('seriesid' = c('SMU42379800500000003',
+                               'CEU0500000003'), 
+                'startyear'='2015', 
+                'endyear' = '2030', 
+                'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+
+earnings <- blsAPI(earnings, api_version = 2, return_data_frame = T) #%>%
+
+
+earnings2 <- earnings %>%
+  mutate(geography = ifelse(seriesID == 'CEU0500000003', "Philadelphia", "United States")) %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+  na.omit() %>%
+  mutate(period = paste(periodName, year, sep = " "), 
+         period = as.Date(my(period))) %>%
+  pivot_longer(4:5, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2020-01-01")
+
+
+earnings2 %>%
+ggplot(aes(x = period, y = yoy, color = geography)) + 
+  geom_line(size = 2) + xlab("Period") + ylab("Year-over-Year Change") + labs(fill = "") +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+ 
+  scale_x_date(labels = date_format("%m/%y"), breaks = date_breaks("2 month"))+
+  scale_color_manual(values=c("#007abd", "#002D46")) + xlab("")+
+theme(
+  axis.text.x = element_text(size=10, color="black"), 
+  axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+  axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+  axis.text.y = element_text(size=11, color="black"),
+  legend.position = "top",
+  panel.grid = element_blank(),
+  strip.placement = "outside",
+  legend.title = element_blank(),
+  legend.text = element_text(size=10, color="black", face = "bold"),
+  strip.text.x = element_text(size=11, color="black", face = "bold"))
+ggsave("Earnings Chart.png",
+       height=4, width = 8, units = "in")
+
+write.csv(earnings2, "R:\\Research, Policy and Innovation\\Research and Data\\Research and Analysis Team\\Research and Special Reporting\\Inflation Analysis Files\\earnings.csv")
+
+
+#### Wage vs Inflation YoY ####
+phil.earnings <- earnings2 %>%
+  filter(geography == "Philadelphia") %>%
+  left_join(philly.inflation, by = c("period")) %>%
+  na.omit()
+
+
+phil.earnings <- phil.earnings %>%
+  dplyr::select(period, "Wages" = yoy.x, "Inflation" = yoy.y, "month" = month.x, "year" = year.x) %>%
+  pivot_longer(c(2:3), names_to = "Measure", values_to = "Value")
+
+
+phil.earnings  %>%
+  ggplot(aes(x = month, y = Value, fill = Measure)) +
+  geom_col(position = position_dodge(), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#007abd", "#002D46")) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y="Year-Over-Year Change")+
+  theme( 
+    axis.text.x = element_text(size=10, color="black"),     
+    axis.title.y.left = element_text(face="bold", margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color="black"),
+    axis.title.y.right = element_text(face="bold", margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color="black"),
+    axis.text.y = element_text(size=11, color="black"),
+    legend.position = "top",
+    panel.grid = element_blank(),
+    strip.placement = "outside",
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color="black", face = "bold"),
+    strip.text.x = element_text(size=11, color="black", face = "bold")) +
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  facet_grid(~year, 
+             scales = "free_x", 
+             space = "free_x", 
+             switch = "x")      
+       height=4, width = 8, units = "in")
+switch = "x")      
+ggsave("Wages vs Inflation YoY.png",
+       height=4, width = 8, units = "in")
+
+
+####
+##### Comparing major cities ####
+cities <- list('seriesid' = c('CUURS12ASA0',
+                              'CUURS12BSA0',
+                              'CUURA104SA0',
+                              'CUURS23ASA0',
+                              'CUURS37BSA0',
+                              'CUURS49DSA0',
+                              'CUURS49ASA0',
+                              'CUURS49BSA0',
+                              
+                              'CUURS35CSA0',
+                              'CUURS35BSA0',
+                              'CUURS35ESA0',
+                              'CUURS48ASA0'
+                              
+                              
+), 
+'startyear'='2015', 
+'endyear' = '2030', 
+'registrationKey'='3e5cdc72217947c09c3f6f8b939b1775')
+
+cities <- blsAPI(cities, api_version = 2, return_data_frame = T) %>%
+  mutate(geography = ifelse(seriesID == 'CUURS12ASA0', "New York City",
+                            ifelse(seriesID == 'CUURS12BSA0', "Philadelphia",
+                                   ifelse(seriesID == 'CUURA104SA0', "Pittsburgh",
+                                          ifelse(seriesID == 'CUURS23ASA0', "Chicago",
+                                                 ifelse(seriesID == 'CUURS37BSA0', "Houston",
+                                                        ifelse(seriesID == 'CUURS49DSA0', "Seattle",
+                                                               ifelse(seriesID == 'CUURS49ASA0', "Los Angeles",
+                                                                      ifelse(seriesID == 'CUURS49BSA0', "San Francisco", 
+                                                                                    ifelse(seriesID == 'CUURS35CSA0', "Atlanta",
+                                                                                           ifelse(seriesID == 'CUURS35BSA0', "Miami",
+                                                                                                  ifelse(seriesID == 'CUURS35ESA0', "Baltimore",
+                                                                                                         ifelse(seriesID == 'CUURS48ASA0', "Phoenix",
+                                                                             
+                                                                             NA)))))))))))))
+  
+  cities <- cities %>%
+  dplyr::select(!(seriesID)) %>%
+  pivot_wider(names_from = geography, values_from = value) %>%
+filter(periodName == "June" ) %>%
+    mutate(period = paste(periodName, year, sep = " "), 
+           period = as.Date(my(period))) %>%
+  pivot_longer(4:14, names_to = "geography", values_to = "value") %>%
+  mutate(value = as.numeric(value)) %>%
+  group_by(month=month(period, label = T), geography) %>%
+  arrange(period) %>%
+  mutate(yoy=value/lag(value,1)-1) %>%
+  group_by(geography) %>%
+  filter(period >= "2021-01-01")
+  
+#helper column that only populations for 2022, so can sort just by 2022 in the viz
+  cities <- cities %>%
+    mutate(order = ifelse(year == "2022", yoy, 0)) 
+  
+  cities %>%
+    ggplot(aes(x=reorder(geography, order), y=, fill=year)) +
+    geom_col(position = "dodge", width = 0.9) +
+    ylab("Year-over-Year Change") + xlab("") +
+    guides(fill=guide_legend(title="Year", reverse = T))+
+    theme(axis.text.x=element_text(angle=45, hjust=1))+
+    scale_fill_manual(values = c("#ffcc3b","#3349b0"))+
+    scale_y_continuous(labels=percent_format()) +
+    coord_flip()
+  ggsave("Major Cities.jpeg",
+         height=6, width = 8, units = "in")
+
+####
+  
+  
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

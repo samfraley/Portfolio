@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Sam Fraley" />
+
+
+<title>inflation</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Sam Fraley</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="Links.html">Links</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">inflation</h1>
+<h4 class="author">Sam Fraley</h4>
+<h4 class="date">5/12/2023</h4>
+
+</div>
+
+
+<pre class="r"><code>          payload &lt;- list(&#39;seriesid&#39; = c(&#39;CUUR0000SA0&#39;,
+                               &#39;CUURS12BSA0&#39;), 
+                &#39;startyear&#39;=&#39;2015&#39;, 
+                &#39;endyear&#39; = &#39;2030&#39;, 
+                &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+cpi.inflation &lt;- blsAPI(payload, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CUURS12BSA0&#39;, &quot;Philadelphia&quot;, &quot;United States&quot;)) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:5, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+
+
+cpi.inflation %&gt;%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = &quot;white&quot;) +
+  theme_minimal() +
+  scale_fill_manual(values = c(&quot;#007abd&quot;, &quot;#002D46&quot;)) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y=&quot;Year-Over-Year Change&quot;)+
+  theme( 
+    axis.text.x = element_text(size=10, color=&quot;black&quot;),     
+    axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+    axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+    axis.text.y = element_text(size=11, color=&quot;black&quot;),
+    legend.position = &quot;top&quot;,
+    panel.grid = element_blank(),
+    strip.placement = &quot;outside&quot;,
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+    strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;)) +
+  geom_hline(yintercept = 0, color = &quot;black&quot;, size = 1) +
+  facet_grid(~year, 
+             scales = &quot;free_x&quot;, 
+             space = &quot;free_x&quot;, 
+             switch = &quot;x&quot;)      </code></pre>
+<pre><code>## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+## i Please use `linewidth` instead.</code></pre>
+<p><img src="inflation_files/figure-html/cars-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Figure 15 Inflation.png&quot;,
+       height=4, width = 8, units = &quot;in&quot;)
+
+
+
+##### goods services ####
+services &lt;- list(&#39;seriesid&#39; = c(&#39;CUURS12BSAS&#39;,
+                               &#39;CUUR0000SAS&#39;), 
+                &#39;startyear&#39;=&#39;2015&#39;, 
+                &#39;endyear&#39; = &#39;2030&#39;, 
+                &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+cpi.services &lt;- blsAPI(services, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CUURS12BSAS&#39;, &quot;Philadelphia&quot;, &quot;United States&quot;)) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:5, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+
+
+cpi.services %&gt;%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = &quot;white&quot;) +
+  theme_minimal() +
+  scale_fill_manual(values = c(&quot;#007abd&quot;, &quot;#002D46&quot;)) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y=&quot;Year-Over-Year Change&quot;)+
+  theme( 
+    axis.text.x = element_text(size=10, color=&quot;black&quot;),     
+    axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+    axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+    axis.text.y = element_text(size=11, color=&quot;black&quot;),
+    legend.position = &quot;top&quot;,
+    panel.grid = element_blank(),
+    strip.placement = &quot;outside&quot;,
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+    strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;)) +
+  geom_hline(yintercept = 0, color = &quot;black&quot;, size = 1) +
+  facet_grid(~year, 
+             scales = &quot;free_x&quot;, 
+             space = &quot;free_x&quot;, 
+             switch = &quot;x&quot;)      </code></pre>
+<p><img src="inflation_files/figure-html/cars-2.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Philly Goods vs Services 2.jpeg&quot;,
+       height=4, width = 8, units = &quot;in&quot;)
+
+
+goods &lt;- list(&#39;seriesid&#39; = c(&#39;CUURS12BSA0L1E&#39;,
+                                    &#39;CUUR0000SA0L1E&#39;), 
+                     &#39;startyear&#39;=&#39;2015&#39;, 
+                     &#39;endyear&#39; = &#39;2030&#39;, 
+                     &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+cpi.goods &lt;- blsAPI(goods, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CUURS12BSA0L1E&#39;, &quot;Philadelphia&quot;, &quot;United States&quot;)) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:5, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+
+year &lt;- c(&quot;June 2021&quot;, &quot;June 2022&quot;)
+Goods &lt;- c(0.045, 0.056)
+Services &lt;- c(0.018, 0.064)
+phl.services.chart &lt;- data.frame(year, Goods, Services)
+
+phl.ser2 &lt;- phl.services.chart %&gt;%
+  pivot_longer(c(2:3), names_to = &quot;measure&quot;, values_to = &quot;change&quot;)
+
+phl.ser2 %&gt;%
+ggplot(aes(x = year, y = change, fill = measure)) +
+  geom_col(position = position_dodge(), color = &quot;white&quot;) +
+  theme_minimal() +
+  scale_fill_manual(labels = c(&quot;Core Goods&quot;,&quot;Services&quot;), values = c(&quot;#e5b11b&quot;, &quot;#dd4826&quot;)) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y=&quot;Year-Over-Year Change&quot;)+
+  theme( 
+    axis.text.x = element_text(size=10, color=&quot;black&quot;),     
+    axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+    axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+    axis.text.y = element_text(size=11, color=&quot;black&quot;),
+    legend.position = &quot;top&quot;,
+    panel.grid = element_blank(),
+    strip.placement = &quot;outside&quot;,
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+    strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;)) +
+  geom_hline(yintercept = 0, color = &quot;black&quot;, size = 1) </code></pre>
+<p><img src="inflation_files/figure-html/cars-3.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Goods vs Services YoY.jpeg&quot;,
+       height=6, width = 5, units = &quot;in&quot;)
+
+
+
+#### Philly table ####
+table &lt;- list(&#39;seriesid&#39; = c(&#39;CUURS12BSAF1&#39;,
+                             &#39;CUURS12BSAH21&#39;,
+                             &#39;CUURS12BSETB01&#39;,
+                             &#39;CUURS12BSEHA&#39;,
+                             &#39;CUURS12BSETA01&#39;,
+                             &#39;CUURS12BSETA02&#39;,
+                             &#39;CUURS12BSAM&#39;,
+                             &#39;CUURS12BSEEB&#39;
+                             ), 
+                &#39;startyear&#39;=&#39;2015&#39;, 
+                &#39;endyear&#39; = &#39;2030&#39;, 
+                &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+philly.table &lt;- blsAPI(table, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CUURS12BSAF1&#39;, &quot;Food&quot;,
+                            ifelse(seriesID == &#39;CUURS12BSAH21&#39;, &quot;Household Energy&quot;,
+                                   ifelse(seriesID == &#39;CUURS12BSETB01&#39;, &quot;Gas&quot;,
+                                          ifelse(seriesID == &#39;CUURS12BSEHA&#39;, &quot;Rent&quot;,
+                                                 ifelse(seriesID == &#39;CUURS12BSETA01&#39;, &quot;New Cars&quot;,
+                                                        ifelse(seriesID == &#39;CUURS12BSETA02&#39;, &quot;Used Cars&quot;,
+                                                               ifelse(seriesID == &#39;CUURS12BSAM&#39;, &quot;Medical Care&quot;,
+                                                                      ifelse(seriesID == &#39;CUURS12BSEEB&#39;, &quot;Tuition &amp; Child Care&quot;, &quot;NA&quot;))))))))) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:11, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+#US TABLE
+us.table &lt;- list(&#39;seriesid&#39; = c(&#39;CUUR0000SAF1&#39;,
+                             &#39;CUUR0000SAH21&#39;,
+                             &#39;CUUR0000SETB01&#39;,
+                             &#39;CUUR0000SEHA&#39;), 
+              &#39;startyear&#39;=&#39;2015&#39;, 
+              &#39;endyear&#39; = &#39;2030&#39;, 
+              &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+us.table2 &lt;- blsAPI(us.table, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CUUR0000SAF1&#39;, &quot;Food&quot;,
+                            ifelse(seriesID == &#39;CUUR0000SAH21&#39;, &quot;Household Energy&quot;,
+                                   ifelse(seriesID == &#39;CUUR0000SETB01&#39;, &quot;Gas&quot;,
+                                          ifelse(seriesID == &#39;CUUR0000SEHA&#39;, &quot;Rent&quot;, &quot;NA&quot;))))) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:7, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+
+
+
+cpi.inflation %&gt;%
+  ggplot(aes(x = month, y = yoy, fill = geography)) +
+  geom_col(position = position_dodge(), color = &quot;white&quot;) +
+  theme_minimal() +
+  scale_fill_manual(values = c(&quot;#007abd&quot;, &quot;#002D46&quot;)) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y=&quot;Year-Over-Year Change&quot;)+
+  theme( 
+    axis.text.x = element_text(size=10, color=&quot;black&quot;),     
+    axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+    axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+    axis.text.y = element_text(size=11, color=&quot;black&quot;),
+    legend.position = &quot;top&quot;,
+    panel.grid = element_blank(),
+    strip.placement = &quot;outside&quot;,
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+    strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;)) +
+  geom_hline(yintercept = 0, color = &quot;black&quot;, size = 1) +
+  facet_grid(~year, 
+             scales = &quot;free_x&quot;, 
+             space = &quot;free_x&quot;, 
+             switch = &quot;x&quot;)      </code></pre>
+<p><img src="inflation_files/figure-html/cars-4.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Figure 15 Inflation.png&quot;,
+       height=4, width = 8, units = &quot;in&quot;)
+
+
+
+
+##### US Unemployment####
+unemployment &lt;- list(&#39;seriesid&#39; = c(&#39;LAUCN421010000000003&#39;), 
+              &#39;startyear&#39;=&#39;2015&#39;, 
+              &#39;endyear&#39; = &#39;2030&#39;, 
+              &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+unemployment &lt;- blsAPI(unemployment, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;LAUCN421010000000003&#39;, &quot;Unemployment&quot;, &quot;YoY&quot;)) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+pivot_longer(4, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+philly.inflation &lt;- cpi.inflation %&gt;%
+  filter(geography == &quot;Philadelphia&quot;)
+
+unemployment.inflation &lt;- left_join(unemployment, philly.inflation, by = &quot;period&quot;) %&gt;%
+  na.omit() %&gt;%
+  dplyr::select(period, &quot;Unemployment&quot; = value.x, &quot;Inflation&quot; = yoy) %&gt;%
+  mutate(Unemployment = Unemployment / 100)
+
+unemployment.inflation.viz &lt;- unemployment.inflation %&gt;%
+  pivot_longer(c(2:3), names_to = &quot;Measure&quot;, values_to = &quot;Values&quot;)
+
+unemployment.inflation.viz %&gt;%
+  ggplot(aes(x = period, y = Values, color = Measure)) +
+  geom_line(size = 2) + xlab(&quot;&quot;) + ylab(&quot;Year-over-Year Change&quot;) + labs(fill = &quot;&quot;) +
+  scale_color_manual(values = c(&quot;#c3972d&quot;, &quot;#a83523&quot;))+
+  scale_x_date(labels = date_format(&quot;%m/%y&quot;), breaks = date_breaks(&quot;2 month&quot;)) +
+  scale_y_continuous(labels=percent_format(), expand = c(0.1,0),  sec.axis = dup_axis()) +
+  geom_hline(yintercept=c(0,0), linetype = &quot;dotted&quot;) +
+  theme(
+    axis.text.x = element_text(size=10, color=&quot;black&quot;),     
+    axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+    axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+    axis.text.y = element_text(size=11, color=&quot;black&quot;),
+    legend.position = &quot;top&quot;,
+    panel.grid = element_blank(),
+    strip.placement = &quot;outside&quot;,
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+    strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;))</code></pre>
+<p><img src="inflation_files/figure-html/cars-5.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Unemployment vs Inflation Chart.jpeg&quot;,
+       height=4, width = 8, units = &quot;in&quot;)
+
+
+####
+
+rm(unemployment2)</code></pre>
+<pre><code>## Warning in rm(unemployment2): object &#39;unemployment2&#39; not found</code></pre>
+<pre class="r"><code>##### Earnings ####
+
+earnings &lt;- list(&#39;seriesid&#39; = c(&#39;SMU42379800500000003&#39;,
+                               &#39;CEU0500000003&#39;), 
+                &#39;startyear&#39;=&#39;2015&#39;, 
+                &#39;endyear&#39; = &#39;2030&#39;, 
+                &#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+
+earnings &lt;- blsAPI(earnings, api_version = 2, return_data_frame = T) #%&gt;%
+
+
+earnings2 &lt;- earnings %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CEU0500000003&#39;, &quot;Philadelphia&quot;, &quot;United States&quot;)) %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+  na.omit() %&gt;%
+  mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+         period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:5, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2020-01-01&quot;)
+
+
+earnings2 %&gt;%
+ggplot(aes(x = period, y = yoy, color = geography)) + 
+  geom_line(size = 2) + xlab(&quot;Period&quot;) + ylab(&quot;Year-over-Year Change&quot;) + labs(fill = &quot;&quot;) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+ 
+  scale_x_date(labels = date_format(&quot;%m/%y&quot;), breaks = date_breaks(&quot;2 month&quot;))+
+  scale_color_manual(values=c(&quot;#007abd&quot;, &quot;#002D46&quot;)) + xlab(&quot;&quot;)+
+theme(
+  axis.text.x = element_text(size=10, color=&quot;black&quot;), 
+  axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+  axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+  axis.text.y = element_text(size=11, color=&quot;black&quot;),
+  legend.position = &quot;top&quot;,
+  panel.grid = element_blank(),
+  strip.placement = &quot;outside&quot;,
+  legend.title = element_blank(),
+  legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+  strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;))</code></pre>
+<p><img src="inflation_files/figure-html/cars-6.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Earnings Chart.png&quot;,
+       height=4, width = 8, units = &quot;in&quot;)
+
+
+#### Wage vs Inflation YoY ####
+phil.earnings &lt;- earnings2 %&gt;%
+  filter(geography == &quot;Philadelphia&quot;) %&gt;%
+  left_join(philly.inflation, by = c(&quot;period&quot;)) %&gt;%
+  na.omit()
+
+
+phil.earnings &lt;- phil.earnings %&gt;%
+  dplyr::select(period, &quot;Wages&quot; = yoy.x, &quot;Inflation&quot; = yoy.y, &quot;month&quot; = month.x, &quot;year&quot; = year.x) %&gt;%
+  pivot_longer(c(2:3), names_to = &quot;Measure&quot;, values_to = &quot;Value&quot;)
+
+
+phil.earnings  %&gt;%
+  ggplot(aes(x = month, y = Value, fill = Measure)) +
+  geom_col(position = position_dodge(), color = &quot;white&quot;) +
+  theme_minimal() +
+  scale_fill_manual(values = c(&quot;#007abd&quot;, &quot;#002D46&quot;)) +
+  scale_y_continuous(labels=percent_format(), expand = c(0,0), sec.axis = dup_axis())+
+  labs(x=NULL,y=&quot;Year-Over-Year Change&quot;)+
+  theme( 
+    axis.text.x = element_text(size=10, color=&quot;black&quot;),     
+    axis.title.y.left = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 20, b = 0, l = 0), size = 11, color=&quot;black&quot;),
+    axis.title.y.right = element_text(face=&quot;bold&quot;, margin = margin(t = 0, r = 0, b = 0, l = 20), size = 11, color=&quot;black&quot;),
+    axis.text.y = element_text(size=11, color=&quot;black&quot;),
+    legend.position = &quot;top&quot;,
+    panel.grid = element_blank(),
+    strip.placement = &quot;outside&quot;,
+    legend.title = element_blank(),
+    legend.text = element_text(size=10, color=&quot;black&quot;, face = &quot;bold&quot;),
+    strip.text.x = element_text(size=11, color=&quot;black&quot;, face = &quot;bold&quot;)) +
+  geom_hline(yintercept = 0, color = &quot;black&quot;, size = 1) +
+  facet_grid(~year, 
+             scales = &quot;free_x&quot;, 
+             space = &quot;free_x&quot;, 
+             switch = &quot;x&quot;)    </code></pre>
+<p><img src="inflation_files/figure-html/cars-7.png" width="672" /></p>
+<pre class="r"><code>####
+##### Comparing major cities ####
+cities &lt;- list(&#39;seriesid&#39; = c(&#39;CUURS12ASA0&#39;,
+                              &#39;CUURS12BSA0&#39;,
+                              &#39;CUURA104SA0&#39;,
+                              &#39;CUURS23ASA0&#39;,
+                              &#39;CUURS37BSA0&#39;,
+                              &#39;CUURS49DSA0&#39;,
+                              &#39;CUURS49ASA0&#39;,
+                              &#39;CUURS49BSA0&#39;,
+                              
+                              &#39;CUURS35CSA0&#39;,
+                              &#39;CUURS35BSA0&#39;,
+                              &#39;CUURS35ESA0&#39;,
+                              &#39;CUURS48ASA0&#39;
+                              
+                              
+), 
+&#39;startyear&#39;=&#39;2015&#39;, 
+&#39;endyear&#39; = &#39;2030&#39;, 
+&#39;registrationKey&#39;=&#39;3e5cdc72217947c09c3f6f8b939b1775&#39;)
+
+cities &lt;- blsAPI(cities, api_version = 2, return_data_frame = T) %&gt;%
+  mutate(geography = ifelse(seriesID == &#39;CUURS12ASA0&#39;, &quot;New York City&quot;,
+                            ifelse(seriesID == &#39;CUURS12BSA0&#39;, &quot;Philadelphia&quot;,
+                                   ifelse(seriesID == &#39;CUURA104SA0&#39;, &quot;Pittsburgh&quot;,
+                                          ifelse(seriesID == &#39;CUURS23ASA0&#39;, &quot;Chicago&quot;,
+                                                 ifelse(seriesID == &#39;CUURS37BSA0&#39;, &quot;Houston&quot;,
+                                                        ifelse(seriesID == &#39;CUURS49DSA0&#39;, &quot;Seattle&quot;,
+                                                               ifelse(seriesID == &#39;CUURS49ASA0&#39;, &quot;Los Angeles&quot;,
+                                                                      ifelse(seriesID == &#39;CUURS49BSA0&#39;, &quot;San Francisco&quot;, 
+                                                                                    ifelse(seriesID == &#39;CUURS35CSA0&#39;, &quot;Atlanta&quot;,
+                                                                                           ifelse(seriesID == &#39;CUURS35BSA0&#39;, &quot;Miami&quot;,
+                                                                                                  ifelse(seriesID == &#39;CUURS35ESA0&#39;, &quot;Baltimore&quot;,
+                                                                                                         ifelse(seriesID == &#39;CUURS48ASA0&#39;, &quot;Phoenix&quot;,
+                                                                             
+                                                                             NA)))))))))))))
+  
+  cities &lt;- cities %&gt;%
+  dplyr::select(!(seriesID)) %&gt;%
+  pivot_wider(names_from = geography, values_from = value) %&gt;%
+filter(periodName == &quot;June&quot; ) %&gt;%
+    mutate(period = paste(periodName, year, sep = &quot; &quot;), 
+           period = as.Date(my(period))) %&gt;%
+  pivot_longer(4:14, names_to = &quot;geography&quot;, values_to = &quot;value&quot;) %&gt;%
+  mutate(value = as.numeric(value)) %&gt;%
+  group_by(month=month(period, label = T), geography) %&gt;%
+  arrange(period) %&gt;%
+  mutate(yoy=value/lag(value,1)-1) %&gt;%
+  group_by(geography) %&gt;%
+  filter(period &gt;= &quot;2021-01-01&quot;)
+  
+#helper column that only populations for 2022, so can sort just by 2022 in the viz
+  cities &lt;- cities %&gt;%
+    mutate(order = ifelse(year == &quot;2022&quot;, yoy, 0)) 
+  
+  cities &lt;- cities %&gt;%
+    ggplot(aes(x=reorder(geography, order), y=, fill=year)) +
+    geom_col(position = &quot;dodge&quot;, width = 0.9) +
+    ylab(&quot;Year-over-Year Change&quot;) + xlab(&quot;&quot;) +
+    guides(fill=guide_legend(title=&quot;Year&quot;, reverse = T))+
+    theme(axis.text.x=element_text(angle=45, hjust=1))+
+    scale_fill_manual(values = c(&quot;#ffcc3b&quot;,&quot;#3349b0&quot;))+
+    scale_y_continuous(labels=percent_format()) +
+    coord_flip()
+
+
+####</code></pre>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
