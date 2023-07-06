@@ -9,13 +9,19 @@ output: html_document
 ![](images/gent_dashboard.png)
 
 
-<font size = "5"> <a href="Good-Jobs-Lab-Fellow-Assessment.html" title="GJC Assessment">GJC Assessment</a></font>
+<font size = "5"> <a href="Good-Jobs-Lab-Fellow-Assessment.html" title="Exploring Rural vs. Non- Rural Wages">Exploring Rural vs. Non- Rural Wages</a></font>
+<a href = "https://samfraley.github.io">
+![](images/rural.jpg)
 
 <font size = "5"> <a href="inflation.html" title="Inflation Analysis - Summer 2022"> Inflation Analysis - Summer 2022 </a></font>
-
+<a href = "https://samfraley.github.io">
+![](images/inflation.jpg)
 
 <font size = "5"> <a href="currentconditions.html" title="Philadelphia Current Labor Market Conditions Dashboard"> Philadelphia Current Labor Market Conditions Dashboard </a></font>
+<a href = "https://samfraley.github.io">
+![](images/currentconditions.jpg)
 
 
-<font size = "5"> <a href="cluster.html" title="Philadelphia Industry Clusters Dashboard"> Philadelphia Industry Clusters Dashboard </a></font>
-
+<font size = "5"> <a href="Clusters.html" title="Philadelphia Industry Clusters">Philadelphia Industry Clusters</a></font>
+<a href = "https://samfraley.github.io">
+![](images/clusters.jpg)
