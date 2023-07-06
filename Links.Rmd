@@ -5,23 +5,23 @@ output: html_document
 
 <font size = "5"> <a href="Gentrification.html" title="Gentrification Interactive Dashboard">Gentrification Interactive Dashboard</a></font>
 
-<a href = "https://samfraley.github.io">
+<a href = "https://samfraley.github.io/Portfolio/Gentrification.html">
 ![](images/gent_dashboard.png)
 
 
 <font size = "5"> <a href="Good-Jobs-Lab-Fellow-Assessment.html" title="Exploring Rural vs. Non- Rural Wages">Exploring Rural vs. Non- Rural Wages</a></font>
-<a href = "https://samfraley.github.io">
+<a href = "https://samfraley.github.io/Portfolio/Good-Jobs-Lab-Fellow-Assessment.html">
 ![](images/rural.jpg)
 
 <font size = "5"> <a href="inflation.html" title="Inflation Analysis - Summer 2022"> Inflation Analysis - Summer 2022 </a></font>
-<a href = "https://samfraley.github.io">
+<a href = "https://samfraley.github.io/Portfolio/inflation.html">
 ![](images/inflation.jpg)
 
 <font size = "5"> <a href="currentconditions.html" title="Philadelphia Current Labor Market Conditions Dashboard"> Philadelphia Current Labor Market Conditions Dashboard </a></font>
-<a href = "https://samfraley.github.io">
+<a href = "https://samfraley.github.io/Portfolio/currentconditions.html">
 ![](images/currentconditions.jpg)
 
 
 <font size = "5"> <a href="Clusters.html" title="Philadelphia Industry Clusters">Philadelphia Industry Clusters</a></font>
-<a href = "https://samfraley.github.io">
+<a href = "https://samfraley.github.io/Portfolio/Clusters.html">
 ![](images/clusters.jpg)
