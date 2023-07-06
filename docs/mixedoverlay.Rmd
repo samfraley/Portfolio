@@ -10,4 +10,4 @@ knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
 ```
 
-<image src="C:\\Users\\sfraley\\Documents\\GitHub\\Portfolio\\images\\mixedincome.pdf" />
+<a href="https://samfraley.github.io/Portfolio/images/mixedincome.pdf" target="_blank">PDF.</a>
