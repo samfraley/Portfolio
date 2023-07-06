@@ -1,0 +1,13 @@
+---
+output: html_document
+title: knit
+header-includes:
+  - \usepackage{pdfpages}
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+```
+
+<image src="C:\\Users\\sfraley\\Documents\\GitHub\\Portfolio\\images\\mixedincome.pdf" />
