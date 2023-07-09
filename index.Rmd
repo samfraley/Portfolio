@@ -21,7 +21,7 @@ output: html_document
 
 I'm a Temple University Economics & Football alumni passionate about data science, economics, story telling and visualization.
 
-## Links
+## 
  [LinkedIn](https://www.linkedin.com/in/sam-fraley-4a6681166/e)
 
 
