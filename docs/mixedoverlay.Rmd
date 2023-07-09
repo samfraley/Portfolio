@@ -10,4 +10,4 @@ knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
 ```
 
-<a href="https://github.com/samfraley/Portfolio/blob/master/images/mixedincome.pdf" target="_blank">PDF.</a>
+<a href="https://samfraley.github.io/Portfolio/images/mixedincome.pdf" target="_blank">PDF.</a>
