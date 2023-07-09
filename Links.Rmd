@@ -20,7 +20,7 @@ output: html_document
 <img src = "images/rural.jpg" style = "border: 8px solid black;">
 
 
-<font size = "5"> ["Inflation Analysis Memo - Summer 2022](https://github.com/samfraley/Portfolio/blob/master/images/inflation22.pdf) </font>
+<font size = "5"> [Inflation Analysis Memo - Summer 2022](https://github.com/samfraley/Portfolio/blob/master/images/inflation22.pdf) </font>
 <font size = "2"> <a href="inflation.html" title="Code Markdown"> Code Markdown </a></font>
 <img src = "images/inflation.jpg" style = "border: 8px solid black;">
 
@@ -29,4 +29,8 @@ output: html_document
 
 <font size = "5"> <a href="Clusters.html" title="Philadelphia Industry Clusters">Philadelphia Industry Clusters</a></font>
 <img src = "images/clusters.jpg" style = "border: 8px solid black;">
+
+
+<font size = "5"> [Analyzing WIOA Title I Barriers]()</a></font>
+<img src = "images/barriers.jpg" style = "border: 8px solid black;">
 
