@@ -83,7 +83,7 @@ server <- function(input, output) {
   
   output$distPlot <- renderPlotly({
     d_filtered <- d()
-    d_filtered$m.change <- c(NA, diff(d_filtered$Employment))
+    d_filtered$m.change <-d_filtered$Employment- lead(d_filtered$Employment, n=1)
     
     plot_ly(data = d_filtered, x = ~Month, y = ~Employment, type = "scatter", mode = "lines+markers") %>%
       add_trace(text = ~paste("Employment This Month: ", scales::comma_format()(Employment), "<br>Change From Last Month: ", scales::comma_format()(m.change)), hoverinfo = "text") %>%
