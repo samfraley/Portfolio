@@ -45,3 +45,7 @@ output: html_document
 <font size = "5"> <a href="Good-Jobs-Lab-Fellow-Assessment.html" title="Exploring Rural vs. Non- Rural Wages">Exploring Rural vs. Non- Rural Wages</a></font>
 <img src = "images/rural.jpg" style = "border: 8px solid black;">
 
+
+<font size = "5"> <a href="https://samfraley.shinyapps.io/PhillyEmploymentShiny/" title="Philadelphia Employment RShiny App (under construction)">Philadelphia Employment RShiny App (under construction)</a></font>
+<img src = "images/PhillyEmployment.jpg" style = "border: 8px solid black;">
+
